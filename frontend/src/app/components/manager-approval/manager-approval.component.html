@@ -1,0 +1,13 @@
+<div class="card page-card"><div class="card-body">
+  <h1 class="h4 mb-3">Manager Approval</h1>
+  <div *ngIf="message" class="alert alert-success">{{ message }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div class="table-responsive"><table class="table table-striped table-hover"><thead><tr><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Comments</th><th>Actions</th></tr></thead><tbody>
+    <tr *ngFor="let request of requests">
+      <td>{{ request.employeeName }}</td><td>{{ request.leaveTypeName }}</td><td>{{ request.fromDate | date }} - {{ request.toDate | date }}</td><td>{{ request.numberOfDays }}</td><td>{{ request.reason }}</td>
+      <td><input class="form-control form-control-sm" placeholder="Manager comments" [(ngModel)]="comments[request.requestID]"></td>
+      <td><button class="btn btn-sm btn-success me-2" (click)="approve(request)">Approve</button><button class="btn btn-sm btn-danger" (click)="reject(request)">Reject</button></td>
+    </tr>
+    <tr *ngIf="requests.length === 0"><td colspan="7" class="text-center text-muted">No pending requests.</td></tr>
+  </tbody></table></div>
+</div></div>
