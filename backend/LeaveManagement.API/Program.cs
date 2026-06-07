@@ -20,7 +20,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
 builder.Services.AddDbContext<LeaveManagementDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseNpgsql(connectionString));
 
 var allowedOrigins = new List<string> { "http://localhost:4200" };
 var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");

@@ -1,3 +1,8 @@
+databases:
+  - name: leave-management-db
+    databaseName: leave_management_db
+    user: leave_management_user
+
 services:
   - type: web
     name: leave-management-api
@@ -8,9 +13,10 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      # Set this manually to a SQL Server connection string if deploying the API.
       - key: ConnectionStrings__DefaultConnection
-        sync: false
+        fromDatabase:
+          name: leave-management-db
+          property: connectionString
       - key: FRONTEND_URL
         value: https://leave-management-frontend.onrender.com
 

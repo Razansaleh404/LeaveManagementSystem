@@ -6,8 +6,8 @@ A beginner-friendly full-stack web application for submitting, tracking, approvi
 
 - **Backend:** ASP.NET Core Web API (.NET 8)
 - **Frontend:** Angular with Bootstrap
-- **Database:** SQL Server / LocalDB
-- **ORM:** Entity Framework Core with `Microsoft.EntityFrameworkCore.SqlServer`
+- **Database:** PostgreSQL
+- **ORM:** Entity Framework Core with `Npgsql.EntityFrameworkCore.PostgreSQL`
 - **Deployment:** GitHub to Render using `render.yaml`
 
 ## Features
@@ -18,7 +18,7 @@ A beginner-friendly full-stack web application for submitting, tracking, approvi
 - Client-side and API validation for date ranges, past dates, required reason, valid status, and existing foreign keys.
 - Request history with status and date-range filters.
 - Manager module for pending requests, approvals, rejections, and comments.
-- SQL Server-backed EF Core migrations and default leave type seed data.
+- PostgreSQL-backed EF Core migrations and default leave type seed data.
 - Swagger API documentation.
 - Global exception handling, friendly error messages, error logging, and CORS for Angular.
 
@@ -60,23 +60,27 @@ render.yaml
 - `ManagerComments` optional, max 500
 - `CreatedDate`
 
-## Install SQL Server Locally
+## Install PostgreSQL Locally
 
-For the easiest demo setup on Windows, install **SQL Server Express LocalDB** with Visual Studio or SQL Server Express. The default connection string uses `(localdb)\MSSQLLocalDB` and creates a database named `LeaveManagementDb`.
+1. Download PostgreSQL from <https://www.postgresql.org/download/>.
+2. Install PostgreSQL and remember the `postgres` user password.
+3. Create a database named `leave_management_db` using pgAdmin or psql:
 
-If you use full SQL Server instead of LocalDB, use the commented alternative connection string in `backend/LeaveManagement.API/appsettings.json`.
+```sql
+CREATE DATABASE leave_management_db;
+```
 
 ## Update Backend Connection String
 
-Open `backend/LeaveManagement.API/appsettings.json` and update the SQL Server instance if needed:
+Open `backend/LeaveManagement.API/appsettings.json` and update the password/user if needed:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=LeaveManagementDb;Trusted_Connection=True;TrustServerCertificate=True"
+  "DefaultConnection": "Host=localhost;Port=5432;Database=leave_management_db;Username=postgres;Password=postgres"
 }
 ```
 
-The commented full SQL Server alternative is `Server=localhost;Database=LeaveManagementDb;Trusted_Connection=True;TrustServerCertificate=True`. Environment variables can still override this with `ConnectionStrings__DefaultConnection`.
+Render can override this with the environment variable `ConnectionStrings__DefaultConnection`.
 
 ## Run Backend Locally
 
@@ -85,12 +89,6 @@ cd backend/LeaveManagement.API
 dotnet restore
 dotnet ef database update
 dotnet run
-```
-
-A fresh SQL Server migration named `InitialSqlServer` is already included. If you intentionally delete the `Migrations` folder and want to regenerate it on your demo laptop, run:
-
-```bash
-dotnet ef migrations add InitialSqlServer
 ```
 
 Swagger is available at `http://localhost:5000/swagger`.
@@ -171,20 +169,21 @@ Approval/rejection body example:
 
 ## Manual Database Script
 
-If you do not want to use EF Core migrations, run `database/create_tables.sql` in SQL Server Management Studio or with `sqlcmd`. Migrations are still recommended for normal development.
+If you do not want to use EF Core migrations, run `database/create_tables.sql` against PostgreSQL. Migrations are still recommended for normal development.
 
 ## Deploy to Render from GitHub
 
 1. Push this repository to GitHub.
 2. In Render, create a new **Blueprint** and select this repository.
 3. Render reads `render.yaml` and creates:
+   - PostgreSQL database
    - ASP.NET Core backend web service
    - Angular static frontend site
 4. The backend service uses:
    - Root directory: `backend/LeaveManagement.API`
    - Build command: `dotnet publish -c Release -o out`
    - Start command: `dotnet out/LeaveManagement.API.dll`
-   - `ConnectionStrings__DefaultConnection` set manually to a SQL Server connection string if deploying the API
+   - `ConnectionStrings__DefaultConnection` from the Render PostgreSQL database
    - `ASPNETCORE_ENVIRONMENT=Production`
    - `FRONTEND_URL` set to the frontend URL
 5. The frontend service uses:
@@ -209,6 +208,5 @@ apiUrl: 'https://YOUR-ACTUAL-BACKEND.onrender.com/api'
 
 - The backend listens on Render's `PORT` environment variable automatically.
 - EF Core uses parameterized queries through LINQ and avoids raw SQL.
-- The local demo API runs on `http://localhost:5000`, and Swagger is available at `http://localhost:5000/swagger`.
 - CORS allows `http://localhost:4200` in development and the deployed frontend URL through `FRONTEND_URL`.
 - Authentication/login is intentionally not included to keep the assignment simple.
