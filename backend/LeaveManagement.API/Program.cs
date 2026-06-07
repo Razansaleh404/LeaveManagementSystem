@@ -16,28 +16,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<LeaveRequestValidator>();
 
-var databaseProvider = builder.Configuration["DatabaseProvider"]
-    ?? throw new InvalidOperationException("DatabaseProvider is not configured. Use 'PostgreSQL' or 'SqlServer'.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
 builder.Services.AddDbContext<LeaveManagementDbContext>(options =>
-{
-    if (databaseProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
-    {
-        var postgreSqlConnection = builder.Configuration.GetConnectionString("PostgreSQL")
-            ?? throw new InvalidOperationException("ConnectionStrings:PostgreSQL is not configured.");
-        options.UseNpgsql(postgreSqlConnection);
-    }
-    else if (databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-    {
-        var sqlServerConnection = builder.Configuration.GetConnectionString("SqlServer")
-            ?? throw new InvalidOperationException("ConnectionStrings:SqlServer is not configured.");
-        options.UseSqlServer(sqlServerConnection);
-    }
-    else
-    {
-        throw new InvalidOperationException("Invalid DatabaseProvider value. Use 'PostgreSQL' or 'SqlServer'.");
-    }
-});
+    options.UseNpgsql(connectionString));
 
 var allowedOrigins = new List<string> { "http://localhost:4200" };
 var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
