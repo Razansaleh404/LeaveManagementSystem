@@ -1,66 +1,105 @@
 # Employee Leave Management System
 
-A complete leave management application with an ASP.NET Core Web API backend, Entity Framework Core, SQL Server, Angular, and Bootstrap.
+A beginner-friendly full-stack web application for submitting, tracking, approving, and rejecting employee leave requests.
 
-## Project structure
+## Technologies Used
+
+- **Backend:** ASP.NET Core Web API (.NET 8)
+- **Frontend:** Angular with Bootstrap
+- **Database:** PostgreSQL
+- **ORM:** Entity Framework Core with `Npgsql.EntityFrameworkCore.PostgreSQL`
+- **Deployment:** GitHub to Render using `render.yaml`
+
+## Features
+
+- Employee management: list, add, edit, delete, search, and active/inactive status.
+- Leave request creation with employee and leave type dropdowns.
+- Automatic inclusive day calculation from From Date and To Date.
+- Client-side and API validation for date ranges, past dates, required reason, valid status, and existing foreign keys.
+- Request history with status and date-range filters.
+- Manager module for pending requests, approvals, rejections, and comments.
+- PostgreSQL-backed EF Core migrations and default leave type seed data.
+- Swagger API documentation.
+- Global exception handling, friendly error messages, error logging, and CORS for Angular.
+
+## Project Structure
 
 ```text
-backend/LeaveManagement.API   ASP.NET Core Web API (.NET 8)
-frontend                      Angular Bootstrap frontend
-database                      SQL Server setup script
-docs                          Additional project documentation
+/backend/LeaveManagement.API
+/frontend
+/database
+README.md
+render.yaml
 ```
 
-## Backend
+## Database Tables
 
-### Prerequisites
+### Employees
 
-- .NET 8 SDK
-- SQL Server or SQL Server LocalDB
+- `EmployeeID` primary key, auto generated
+- `FirstName` required, max 50
+- `LastName` required, max 50
+- `Email` required, max 100, unique
+- `Department` required, max 50
+- `IsActive` defaults to true
 
-### Configuration
+### LeaveTypes
 
-The default connection string is in `backend/LeaveManagement.API/appsettings.json`:
+- `LeaveTypeID` primary key, auto generated
+- `LeaveName` required, max 50
+- Seeded values: Annual Leave, Sick Leave, Unpaid Leave
+
+### LeaveRequests
+
+- `RequestID` primary key, auto generated
+- `EmployeeID` foreign key to Employees
+- `LeaveTypeID` foreign key to LeaveTypes
+- `FromDate`, `ToDate`, `NumberOfDays`
+- `Reason` required, max 500
+- `Status`: Pending, Approved, or Rejected
+- `ManagerComments` optional, max 500
+- `CreatedDate`
+
+## Install PostgreSQL Locally
+
+1. Download PostgreSQL from <https://www.postgresql.org/download/>.
+2. Install PostgreSQL and remember the `postgres` user password.
+3. Create a database named `leave_management_db` using pgAdmin or psql:
+
+```sql
+CREATE DATABASE leave_management_db;
+```
+
+## Update Backend Connection String
+
+Open `backend/LeaveManagement.API/appsettings.json` and update the password/user if needed:
 
 ```json
-"DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=LeaveManagementDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+"ConnectionStrings": {
+  "DefaultConnection": "Host=localhost;Port=5432;Database=leave_management_db;Username=postgres;Password=postgres"
+}
 ```
 
-Update it if you are using a different SQL Server instance.
+Render can override this with the environment variable `ConnectionStrings__DefaultConnection`.
 
-### Run the API
+## Run Backend Locally
 
 ```bash
 cd backend/LeaveManagement.API
 dotnet restore
-# Create the database first by running database/create_leave_management.sql
+dotnet ef database update
 dotnet run
 ```
 
-Swagger is available in development mode at the URL printed by `dotnet run`, followed by `/swagger`.
+Swagger is available at `http://localhost:5000/swagger`.
 
-## Database
-
-Create and seed the SQL Server database with the included SQL script:
+If `dotnet ef` is not installed, run:
 
 ```bash
-sqlcmd -S "(localdb)\\MSSQLLocalDB" -i database/create_leave_management.sql
+dotnet tool install --global dotnet-ef
 ```
 
-The script creates `Employees`, `LeaveTypes`, and `LeaveRequests`, then seeds these leave types:
-
-- Annual Leave
-- Sick Leave
-- Unpaid Leave
-
-## Frontend
-
-### Prerequisites
-
-- Node.js
-- npm
-
-### Run the Angular app
+## Run Frontend Locally
 
 ```bash
 cd frontend
@@ -68,12 +107,106 @@ npm install
 npm start
 ```
 
-Open `http://localhost:4200` in your browser. The frontend expects the API at `https://localhost:7047/api`. If your backend uses another URL, update `frontend/src/app/services/api.service.ts`.
+The Angular app runs at `http://localhost:4200` and calls the API configured in `frontend/src/environments/environment.ts`.
 
-## Main features
+## API URL Configuration
 
-- Employee management with add, edit, delete/deactivate, and search.
-- New leave request workflow with inclusive day calculation.
-- Request history with status and date filters.
-- Manager approval page for approving or rejecting pending requests with comments.
-- Server-side validation and clean JSON error responses.
+Local API URL:
+
+```ts
+// frontend/src/environments/environment.ts
+apiUrl: 'http://localhost:5000/api'
+```
+
+Production API URL:
+
+```ts
+// frontend/src/environments/environment.prod.ts
+// Replace this after Render gives you the backend URL.
+apiUrl: 'https://YOUR-BACKEND-RENDER-URL.onrender.com/api'
+```
+
+After updating the production API URL, commit and push the change so Render can rebuild the frontend.
+
+## Main API Endpoints
+
+### Employees
+
+- `GET /api/employees`
+- `GET /api/employees/{id}`
+- `POST /api/employees`
+- `PUT /api/employees/{id}`
+- `DELETE /api/employees/{id}`
+- `GET /api/employees/search?term=value`
+
+### LeaveTypes
+
+- `GET /api/leavetypes`
+- `POST /api/leavetypes`
+- `PUT /api/leavetypes/{id}`
+- `DELETE /api/leavetypes/{id}`
+
+### LeaveRequests
+
+- `GET /api/leaverequests`
+- `GET /api/leaverequests/{id}`
+- `POST /api/leaverequests`
+- `PUT /api/leaverequests/{id}`
+- `DELETE /api/leaverequests/{id}`
+- `GET /api/leaverequests/history`
+- `GET /api/leaverequests/filter?status=Pending&fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD`
+- `GET /api/leaverequests/pending`
+- `PUT /api/leaverequests/{id}/approve`
+- `PUT /api/leaverequests/{id}/reject`
+
+Approval/rejection body example:
+
+```json
+{
+  "managerComments": "Approved for the requested dates."
+}
+```
+
+## Manual Database Script
+
+If you do not want to use EF Core migrations, run `database/create_tables.sql` against PostgreSQL. Migrations are still recommended for normal development.
+
+## Deploy to Render from GitHub
+
+1. Push this repository to GitHub.
+2. In Render, create a new **Blueprint** and select this repository.
+3. Render reads `render.yaml` and creates:
+   - PostgreSQL database
+   - ASP.NET Core backend web service
+   - Angular static frontend site
+4. The backend service uses:
+   - Root directory: `backend/LeaveManagement.API`
+   - Build command: `dotnet publish -c Release -o out`
+   - Start command: `dotnet out/LeaveManagement.API.dll`
+   - `ConnectionStrings__DefaultConnection` from the Render PostgreSQL database
+   - `ASPNETCORE_ENVIRONMENT=Production`
+   - `FRONTEND_URL` set to the frontend URL
+5. The frontend service uses:
+   - Root directory: `frontend`
+   - Build command: `npm install && npm run build`
+   - Publish directory: `dist/leave-management-frontend/browser`
+
+## Important Render Follow-up Steps
+
+1. After Render gives you the backend URL, update `frontend/src/environments/environment.prod.ts`:
+
+```ts
+apiUrl: 'https://YOUR-ACTUAL-BACKEND.onrender.com/api'
+```
+
+2. Commit and push the frontend change.
+3. Redeploy the frontend static site.
+4. Update the backend `FRONTEND_URL` environment variable if your frontend URL is different from the placeholder in `render.yaml`.
+5. Redeploy the backend after changing `FRONTEND_URL`.
+
+## Notes
+
+- The backend listens on Render's `PORT` environment variable automatically.
+- EF Core uses parameterized queries through LINQ and avoids raw SQL.
+- CORS allows `http://localhost:4200` in development and the deployed frontend URL through `FRONTEND_URL`.
+- Authentication/login is intentionally not included to keep the assignment simple.
