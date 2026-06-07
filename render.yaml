@@ -1,0 +1,36 @@
+databases:
+  - name: leave-management-db
+    plan: free
+    databaseName: leave_management
+    user: leave_management_user
+
+services:
+  - type: web
+    name: leave-management-api
+    runtime: dotnet
+    plan: free
+    rootDir: backend/LeaveManagement.API
+    buildCommand: dotnet restore && dotnet publish -c Release -o publish
+    startCommand: dotnet publish/LeaveManagement.API.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: leave-management-db
+          property: connectionString
+      - key: FRONTEND_URL
+        sync: false
+      - key: ENABLE_SWAGGER
+        value: true
+
+  - type: web
+    name: leave-management-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist/leave-management-frontend/browser
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
