@@ -12,6 +12,17 @@ docs                          Additional project documentation
 render.yaml                   Render blueprint for database, API, and static frontend
 ```
 
+
+## Merge conflict resolution notes
+
+The deployment branch keeps the PostgreSQL/Render-ready versions of the files that commonly conflict with the earlier local-only implementation:
+
+- `backend/LeaveManagement.API/LeaveManagement.API.csproj` uses `Npgsql.EntityFrameworkCore.PostgreSQL` instead of the previous relational EF provider.
+- `backend/LeaveManagement.API/Program.cs` uses `UseNpgsql`, reads Render's `PORT`, accepts `ConnectionStrings__DefaultConnection`, and allows the deployed frontend through `FRONTEND_URL`.
+- `backend/LeaveManagement.API/appsettings.json` contains the local PostgreSQL connection string.
+- `database/create_leave_management.sql` is a PostgreSQL script.
+- `frontend/src/app/services/api.service.ts` reads the API URL from Angular environment files instead of hardcoding localhost.
+
 ## Backend configuration
 
 The backend uses PostgreSQL through `Npgsql.EntityFrameworkCore.PostgreSQL` and reads the `DefaultConnection` connection string from normal .NET configuration. It accepts normal Npgsql keyword connection strings and Render-style `postgres://...` URLs.

@@ -1,0 +1,19 @@
+# .NET build output
+bin/
+obj/
+
+# Angular / Node dependencies and build output
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Local environment files
+*.user
+.env
+.env.*
+!.env.example
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
