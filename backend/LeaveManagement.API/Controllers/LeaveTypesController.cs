@@ -1,13 +1,11 @@
 using LeaveManagement.API.Data;
 using LeaveManagement.API.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagement.API.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
 public class LeaveTypesController(LeaveManagementDbContext context) : ControllerBase
 {

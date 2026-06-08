@@ -2,13 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Employee } from '../../models/models';
-import { DepartmentService } from '../../services/department.service';
 import { EmployeeService } from '../../services/employee.service';
 
 @Component({ selector: 'app-employee-management', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './employee-management.component.html' })
 export class EmployeeManagementComponent implements OnInit {
   employees: Employee[] = [];
-  departments: string[] = [];
   form: Employee = this.emptyEmployee();
   searchTerm = '';
   loading = false;
@@ -16,19 +14,9 @@ export class EmployeeManagementComponent implements OnInit {
   message = '';
   error = '';
 
-  constructor(private readonly employeeService: EmployeeService, private readonly departmentService: DepartmentService) {}
+  constructor(private readonly employeeService: EmployeeService) {}
 
-  ngOnInit(): void {
-    this.loadDepartments();
-    this.loadEmployees();
-  }
-
-  loadDepartments(): void {
-    this.departmentService.getAll().subscribe({
-      next: data => this.departments = data,
-      error: () => this.departments = ['IT', 'HR', 'Finance', 'Marketing', 'Sales', 'Operations', 'Engineering', 'Customer Support']
-    });
-  }
+  ngOnInit(): void { this.loadEmployees(); }
 
   loadEmployees(): void {
     this.loading = true;
