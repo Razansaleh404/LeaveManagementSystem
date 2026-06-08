@@ -2,12 +2,12 @@
   <h3 class="card-title mb-3">Create Leave Request</h3>
   <div *ngIf="message" class="alert alert-success">{{ message }}</div><div *ngIf="error" class="alert alert-danger">{{ error }}</div>
   <form (ngSubmit)="submit()" #requestForm="ngForm" class="row g-3">
-    <div class="col-md-6"><label class="form-label">Employee</label><select class="form-select" name="employeeID" [(ngModel)]="form.employeeID" required><option [ngValue]="0">Select employee</option><option *ngFor="let e of employees" [ngValue]="e.employeeID">{{ e.firstName }} {{ e.lastName }}</option></select></div>
+    <div class="col-md-6"><label class="form-label">Employee</label><input class="form-control" [value]="employeeName" disabled><div class="form-text">Requests are always created for your own employee record.</div></div>
     <div class="col-md-6"><label class="form-label">Leave Type</label><select class="form-select" name="leaveTypeID" [(ngModel)]="form.leaveTypeID" required><option [ngValue]="0">Select leave type</option><option *ngFor="let t of leaveTypes" [ngValue]="t.leaveTypeID">{{ t.leaveName }}</option></select></div>
     <div class="col-md-4"><label class="form-label">From Date</label><input class="form-control" type="date" name="fromDate" [min]="today" [(ngModel)]="form.fromDate" (change)="calculateDays()" required></div>
     <div class="col-md-4"><label class="form-label">To Date</label><input class="form-control" type="date" name="toDate" [min]="form.fromDate || today" [(ngModel)]="form.toDate" (change)="calculateDays()" required></div>
     <div class="col-md-4"><label class="form-label">Number of Days</label><input class="form-control" [value]="numberOfDays" disabled></div>
     <div class="col-12"><label class="form-label">Reason</label><textarea class="form-control" name="reason" [(ngModel)]="form.reason" maxlength="500" required></textarea></div>
-    <div class="col-12"><button class="btn btn-primary" [disabled]="requestForm.invalid || form.employeeID === 0 || form.leaveTypeID === 0 || loading">{{ loading ? 'Submitting...' : 'Submit Request' }}</button></div>
+    <div class="col-12"><button class="btn btn-primary" [disabled]="requestForm.invalid || form.leaveTypeID === 0 || loading">{{ loading ? 'Submitting...' : 'Submit Request' }}</button></div>
   </form>
 </div></div>
