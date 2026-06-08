@@ -1,11 +1,15 @@
 using System;
+using LeaveManagement.API.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace LeaveManagement.API.Migrations;
 
-public partial class InitialSqlServer : Migration
+[DbContext(typeof(LeaveManagementDbContext))]
+[Migration("20260608000000_InitialCreate")]
+public partial class InitialCreate : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
@@ -53,11 +57,13 @@ public partial class InitialSqlServer : Migration
                 Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                 Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "Pending"),
                 ManagerComments = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
             },
             constraints: table =>
             {
                 table.PrimaryKey("PK_LeaveRequests", x => x.RequestID);
+                table.CheckConstraint("CK_LeaveRequests_DateRange", "[ToDate] >= [FromDate]");
+                table.CheckConstraint("CK_LeaveRequests_Status", "[Status] IN ('Pending', 'Approved', 'Rejected')");
                 table.ForeignKey(
                     name: "FK_LeaveRequests_Employees_EmployeeID",
                     column: x => x.EmployeeID,
