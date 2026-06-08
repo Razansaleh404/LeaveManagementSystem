@@ -6,14 +6,17 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <nav class="navbar navbar-expand-lg app-navbar sticky-top">
       <div class="container">
-        <a class="navbar-brand" routerLink="/employees">Leave Management</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+        <a class="navbar-brand d-flex align-items-center gap-2" routerLink="/employees">
+          <span class="brand-mark">L</span>
+          <span>Leave Management</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
-          <ul class="navbar-nav ms-auto">
+          <ul class="navbar-nav ms-auto gap-lg-1">
             <li class="nav-item"><a class="nav-link" routerLink="/employees" routerLinkActive="active">Employees</a></li>
             <li class="nav-item"><a class="nav-link" routerLink="/request-leave" routerLinkActive="active">Request Leave</a></li>
             <li class="nav-item"><a class="nav-link" routerLink="/history" routerLinkActive="active">History</a></li>
@@ -22,7 +25,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </div>
       </div>
     </nav>
-    <main class="container py-4">
+    <main class="container app-main py-4 py-lg-5">
       <router-outlet></router-outlet>
     </main>
   `
