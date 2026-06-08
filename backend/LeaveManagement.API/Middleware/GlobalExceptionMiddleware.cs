@@ -15,7 +15,7 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
         catch (DbUpdateException ex)
         {
             logger.LogError(ex, "A database error occurred.");
-            await WriteErrorAsync(context, HttpStatusCode.BadRequest, "A database error occurred. Please check your request and try again.");
+            await WriteErrorAsync(context, HttpStatusCode.InternalServerError, "An unexpected database error occurred. Please try again later.");
         }
         catch (Exception ex)
         {

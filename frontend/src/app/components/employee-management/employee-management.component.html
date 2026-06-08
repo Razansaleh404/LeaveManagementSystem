@@ -1,40 +1,114 @@
-<div class="row g-4">
+<section class="page-header mb-4">
+  <div>
+    <p class="eyebrow mb-1">Employee Directory</p>
+    <h1 class="page-title mb-1">Manage employees</h1>
+    <p class="page-subtitle mb-0">Add, update, search, and maintain employees for leave management.</p>
+  </div>
+</section>
+
+<div class="row g-4 employee-layout">
   <div class="col-lg-4">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title mb-3">{{ form.employeeID ? 'Edit Employee' : 'Add Employee' }}</h4>
-        <div *ngIf="message" class="alert alert-success">{{ message }}</div>
-        <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-        <form (ngSubmit)="save()" #employeeForm="ngForm">
-          <div class="mb-3"><label class="form-label">First Name</label><input class="form-control" name="firstName" [(ngModel)]="form.firstName" maxlength="50" required></div>
-          <div class="mb-3"><label class="form-label">Last Name</label><input class="form-control" name="lastName" [(ngModel)]="form.lastName" maxlength="50" required></div>
-          <div class="mb-3"><label class="form-label">Email</label><input class="form-control" type="email" name="email" [(ngModel)]="form.email" maxlength="100" required></div>
-          <div class="mb-3"><label class="form-label">Department</label><input class="form-control" name="department" [(ngModel)]="form.department" maxlength="50" required></div>
-          <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="isActive" [(ngModel)]="form.isActive" id="isActive"><label class="form-check-label" for="isActive">Active</label></div>
-          <button class="btn btn-primary me-2" [disabled]="employeeForm.invalid || saving">{{ saving ? 'Saving...' : 'Save' }}</button>
-          <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">Clear</button>
+    <div class="card app-card form-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <h2 class="section-title mb-1">{{ form.employeeID ? 'Edit Employee' : 'Add Employee' }}</h2>
+            <p class="text-muted mb-0 small">Required fields are marked with an asterisk.</p>
+          </div>
+          <span class="status-pill" [ngClass]="form.employeeID ? 'status-pill-edit' : 'status-pill-new'">
+            {{ form.employeeID ? 'Editing' : 'New' }}
+          </span>
+        </div>
+
+        <div *ngIf="message" class="alert app-alert alert-success" role="status">{{ message }}</div>
+        <div *ngIf="error" class="alert app-alert alert-danger" role="alert">{{ error }}</div>
+
+        <form (ngSubmit)="save(employeeForm)" #employeeForm="ngForm" novalidate>
+          <div class="mb-3">
+            <label class="form-label" for="firstName">First Name <span class="required">*</span></label>
+            <input class="form-control" id="firstName" name="firstName" [(ngModel)]="form.firstName" maxlength="50" required #firstName="ngModel" [class.is-invalid]="firstName.invalid && firstName.touched">
+            <div class="invalid-feedback d-block" *ngIf="firstName.invalid && firstName.touched">First Name is required.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="lastName">Last Name <span class="required">*</span></label>
+            <input class="form-control" id="lastName" name="lastName" [(ngModel)]="form.lastName" maxlength="50" required #lastName="ngModel" [class.is-invalid]="lastName.invalid && lastName.touched">
+            <div class="invalid-feedback d-block" *ngIf="lastName.invalid && lastName.touched">Last Name is required.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="email">Email <span class="required">*</span></label>
+            <input class="form-control" id="email" type="email" name="email" [(ngModel)]="form.email" maxlength="100" required email #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
+            <div class="invalid-feedback d-block" *ngIf="email.errors?.['required'] && email.touched">Email is required.</div>
+            <div class="invalid-feedback d-block" *ngIf="email.errors?.['email'] && email.touched">Enter a valid email address.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="department">Department <span class="required">*</span></label>
+            <input class="form-control" id="department" name="department" [(ngModel)]="form.department" maxlength="50" required #department="ngModel" [class.is-invalid]="department.invalid && department.touched">
+            <div class="invalid-feedback d-block" *ngIf="department.invalid && department.touched">Department is required.</div>
+          </div>
+
+          <div class="form-check form-switch mb-4">
+            <input class="form-check-input" type="checkbox" name="isActive" [(ngModel)]="form.isActive" id="isActive">
+            <label class="form-check-label" for="isActive">Employee is active</label>
+          </div>
+
+          <div class="d-grid d-sm-flex gap-2">
+            <button class="btn btn-primary btn-action" [disabled]="employeeForm.invalid || saving">
+              {{ saving ? 'Saving...' : 'Save Employee' }}
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-action" (click)="resetForm(employeeForm)">Clear</button>
+          </div>
         </form>
       </div>
     </div>
   </div>
+
   <div class="col-lg-8">
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
-          <h4 class="card-title mb-0">Employees</h4>
-          <div class="input-group" style="max-width: 420px;"><input class="form-control" placeholder="Search name or email" [(ngModel)]="searchTerm" (keyup.enter)="search()"><button class="btn btn-outline-primary" (click)="search()">Search</button></div>
+    <div class="card app-card h-100">
+      <div class="card-body p-4">
+        <div class="employee-toolbar mb-4">
+          <div>
+            <h2 class="section-title mb-1">Employees</h2>
+            <p class="text-muted mb-0 small">{{ employees.length }} employee{{ employees.length === 1 ? '' : 's' }} shown</p>
+          </div>
+          <div class="search-box input-group">
+            <input class="form-control" placeholder="Search name, email, or department" [(ngModel)]="searchTerm" (keyup.enter)="search()" aria-label="Search employees">
+            <button class="btn btn-outline-primary" type="button" (click)="search()">Search</button>
+          </div>
         </div>
-        <div *ngIf="loading" class="text-center py-4">Loading employees...</div>
-        <div class="table-responsive" *ngIf="!loading">
-          <table class="table table-hover align-middle">
-            <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+
+        <div *ngIf="loading" class="loading-state py-5">Loading employees...</div>
+
+        <div class="table-responsive employee-table-wrapper" *ngIf="!loading">
+          <table class="table employee-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
             <tbody>
               <tr *ngFor="let employee of employees">
-                <td>{{ employee.firstName }} {{ employee.lastName }}</td><td>{{ employee.email }}</td><td>{{ employee.department }}</td>
-                <td><span class="badge" [ngClass]="employee.isActive ? 'bg-success' : 'bg-secondary'">{{ employee.isActive ? 'Active' : 'Inactive' }}</span></td>
-                <td class="text-end"><button class="btn btn-sm btn-outline-primary me-2" (click)="edit(employee)">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="delete(employee)">Delete</button></td>
+                <td>
+                  <div class="employee-name">{{ employee.firstName }} {{ employee.lastName }}</div>
+                  <div class="employee-id">ID #{{ employee.employeeID }}</div>
+                </td>
+                <td>{{ employee.email }}</td>
+                <td>{{ employee.department }}</td>
+                <td><span class="badge rounded-pill" [ngClass]="employee.isActive ? 'bg-success' : 'bg-secondary'">{{ employee.isActive ? 'Active' : 'Inactive' }}</span></td>
+                <td class="text-end action-cell">
+                  <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="edit(employee)">Edit</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="delete(employee)">Delete</button>
+                </td>
               </tr>
-              <tr *ngIf="employees.length === 0"><td colspan="5" class="text-center text-muted">No employees found.</td></tr>
+              <tr *ngIf="employees.length === 0">
+                <td colspan="5" class="empty-state">No employees found.</td>
+              </tr>
             </tbody>
           </table>
         </div>

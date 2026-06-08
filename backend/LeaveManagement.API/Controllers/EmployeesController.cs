@@ -1,13 +1,15 @@
 using LeaveManagement.API.Data;
+using LeaveManagement.API.DTOs;
 using LeaveManagement.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace LeaveManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EmployeesController(LeaveManagementDbContext context) : ControllerBase
+public class EmployeesController(LeaveManagementDbContext context, ILogger<EmployeesController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees()
@@ -27,45 +29,86 @@ public class EmployeesController(LeaveManagementDbContext context) : ControllerB
     {
         term = term?.Trim() ?? string.Empty;
         return await context.Employees
-            .Where(e => e.FirstName.Contains(term) || e.LastName.Contains(term) || e.Email.Contains(term))
+            .Where(e => e.FirstName.Contains(term) || e.LastName.Contains(term) || e.Email.Contains(term) || e.Department.Contains(term))
             .OrderBy(e => e.LastName)
             .ThenBy(e => e.FirstName)
             .ToListAsync();
     }
 
     [HttpPost]
-    public async Task<ActionResult<Employee>> CreateEmployee(Employee employee)
+    public async Task<ActionResult<Employee>> CreateEmployee(EmployeeCreateUpdateDto request)
     {
-        if (await context.Employees.AnyAsync(e => e.Email == employee.Email))
+        if (!IsValidEmployeeRequest(request))
         {
-            return BadRequest(new { message = "Email must be unique." });
+            return BadRequest(new { message = "Invalid employee data." });
         }
 
+        var normalizedEmail = request.Email.Trim().ToLower();
+        if (await EmailExistsAsync(normalizedEmail))
+        {
+            return Conflict(new { message = "Email already exists." });
+        }
+
+        var employee = new Employee
+        {
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            Email = request.Email.Trim(),
+            Department = request.Department.Trim(),
+            IsActive = request.IsActive
+        };
+
         context.Employees.Add(employee);
-        await context.SaveChangesAsync();
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error while creating employee with email {Email}.", employee.Email);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An unexpected database error occurred while saving the employee." });
+        }
+
         return CreatedAtAction(nameof(GetEmployee), new { id = employee.EmployeeID }, employee);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateEmployee(int id, Employee employee)
+    public async Task<IActionResult> UpdateEmployee(int id, EmployeeCreateUpdateDto request)
     {
-        if (id != employee.EmployeeID)
+        if (!IsValidEmployeeRequest(request))
         {
-            return BadRequest(new { message = "Employee ID in the URL must match the request body." });
+            return BadRequest(new { message = "Invalid employee data." });
         }
 
-        if (await context.Employees.AnyAsync(e => e.Email == employee.Email && e.EmployeeID != id))
-        {
-            return BadRequest(new { message = "Email must be unique." });
-        }
-
-        if (!await context.Employees.AnyAsync(e => e.EmployeeID == id))
+        var employee = await context.Employees.FindAsync(id);
+        if (employee is null)
         {
             return NotFound(new { message = "Employee not found." });
         }
 
-        context.Entry(employee).State = EntityState.Modified;
-        await context.SaveChangesAsync();
+        var normalizedEmail = request.Email.Trim().ToLower();
+        if (await EmailExistsAsync(normalizedEmail, id))
+        {
+            return Conflict(new { message = "Email already exists." });
+        }
+
+        employee.FirstName = request.FirstName.Trim();
+        employee.LastName = request.LastName.Trim();
+        employee.Email = request.Email.Trim();
+        employee.Department = request.Department.Trim();
+        employee.IsActive = request.IsActive;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error while updating employee {EmployeeID}.", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An unexpected database error occurred while saving the employee." });
+        }
+
         return NoContent();
     }
 
@@ -79,7 +122,32 @@ public class EmployeesController(LeaveManagementDbContext context) : ControllerB
         }
 
         context.Employees.Remove(employee);
-        await context.SaveChangesAsync();
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Database error while deleting employee {EmployeeID}.", id);
+            return BadRequest(new { message = "Employee cannot be deleted while related leave requests exist." });
+        }
+
         return NoContent();
+    }
+
+    private static bool IsValidEmployeeRequest(EmployeeCreateUpdateDto request)
+    {
+        return !string.IsNullOrWhiteSpace(request.FirstName)
+            && !string.IsNullOrWhiteSpace(request.LastName)
+            && !string.IsNullOrWhiteSpace(request.Email)
+            && !string.IsNullOrWhiteSpace(request.Department)
+            && new EmailAddressAttribute().IsValid(request.Email);
+    }
+
+    private Task<bool> EmailExistsAsync(string normalizedEmail, int? excludeEmployeeId = null)
+    {
+        return context.Employees.AnyAsync(e => e.Email.ToLower() == normalizedEmail
+            && (!excludeEmployeeId.HasValue || e.EmployeeID != excludeEmployeeId.Value));
     }
 }

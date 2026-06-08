@@ -1,6 +1,7 @@
 using LeaveManagement.API.Data;
 using LeaveManagement.API.Middleware;
 using LeaveManagement.API.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,7 +12,11 @@ if (!string.IsNullOrWhiteSpace(port))
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = _ => new BadRequestObjectResult(new { message = "Invalid employee data." });
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<LeaveRequestValidator>();
@@ -22,18 +27,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<LeaveManagementDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-var allowedOrigins = new List<string> { "http://localhost:4200" };
-var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
-if (!string.IsNullOrWhiteSpace(frontendUrl))
-{
-    allowedOrigins.Add(frontendUrl.TrimEnd('/'));
-}
+var allowedOrigins = new[] { "http://localhost:4200" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularCors", policy =>
     {
-        policy.WithOrigins(allowedOrigins.ToArray())
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -47,6 +47,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseCors("AngularCors");
+
+// Authentication is intentionally not enabled yet. JWT role-based authorization can be
+// added here later by registering authentication/authorization policies before MapControllers.
 app.UseAuthorization();
 app.MapControllers();
 
