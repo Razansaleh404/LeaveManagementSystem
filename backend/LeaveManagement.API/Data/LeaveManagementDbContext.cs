@@ -47,7 +47,12 @@ public class LeaveManagementDbContext(DbContextOptions<LeaveManagementDbContext>
             entity.Property(lr => lr.Reason).IsRequired().HasMaxLength(500);
             entity.Property(lr => lr.Status).IsRequired().HasMaxLength(20).HasDefaultValue(LeaveStatus.Pending);
             entity.Property(lr => lr.ManagerComments).HasMaxLength(500);
-            entity.Property(lr => lr.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(lr => lr.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_LeaveRequests_DateRange", "[ToDate] >= [FromDate]");
+                table.HasCheckConstraint("CK_LeaveRequests_Status", "[Status] IN ('Pending', 'Approved', 'Rejected')");
+            });
 
             entity.HasOne(lr => lr.Employee)
                 .WithMany(e => e.LeaveRequests)

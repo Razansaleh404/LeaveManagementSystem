@@ -6,8 +6,8 @@ A beginner-friendly full-stack web application for submitting, tracking, approvi
 
 - **Backend:** ASP.NET Core Web API (.NET 8)
 - **Frontend:** Angular with Bootstrap
-- **Database:** PostgreSQL
-- **ORM:** Entity Framework Core with `Npgsql.EntityFrameworkCore.PostgreSQL`
+- **Database:** SQL Server
+- **ORM:** Entity Framework Core with `Microsoft.EntityFrameworkCore.SqlServer`
 - **Deployment:** GitHub to Render using `render.yaml`
 
 ## Features
@@ -18,7 +18,7 @@ A beginner-friendly full-stack web application for submitting, tracking, approvi
 - Client-side and API validation for date ranges, past dates, required reason, valid status, and existing foreign keys.
 - Request history with status and date-range filters.
 - Manager module for pending requests, approvals, rejections, and comments.
-- PostgreSQL-backed EF Core migrations and default leave type seed data.
+- SQL Server-backed EF Core migrations and default leave type seed data.
 - Swagger API documentation.
 - Global exception handling, friendly error messages, error logging, and CORS for Angular.
 
@@ -60,11 +60,10 @@ render.yaml
 - `ManagerComments` optional, max 500
 - `CreatedDate`
 
-## Install PostgreSQL Locally
+## Install SQL Server Locally
 
-1. Download PostgreSQL from <https://www.postgresql.org/download/>.
-2. Install PostgreSQL and remember the `postgres` user password.
-3. Create a database named `leave_management_db` using pgAdmin or psql:
+1. Install SQL Server Developer, Express, LocalDB, or use an available company SQL Server instance.
+2. Create a database named `leave_management_db` in SQL Server Management Studio, Azure Data Studio, or `sqlcmd`:
 
 ```sql
 CREATE DATABASE leave_management_db;
@@ -72,15 +71,23 @@ CREATE DATABASE leave_management_db;
 
 ## Update Backend Connection String
 
-Open `backend/LeaveManagement.API/appsettings.json` and update the password/user if needed:
+Open `backend/LeaveManagement.API/appsettings.json` and update the SQL Server connection string for your machine. The default local Windows SQL Server connection is:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Host=localhost;Port=5432;Database=leave_management_db;Username=postgres;Password=postgres"
+  "DefaultConnection": "Server=localhost;Database=leave_management_db;Trusted_Connection=True;TrustServerCertificate=True"
 }
 ```
 
-Render can override this with the environment variable `ConnectionStrings__DefaultConnection`.
+For SQL Server authentication, use a connection string like this instead:
+
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=YOUR_SERVER_NAME;Database=leave_management_db;User Id=YOUR_USER;Password=YOUR_PASSWORD;TrustServerCertificate=True"
+}
+```
+
+Deployment environments can override this with the environment variable `ConnectionStrings__DefaultConnection`.
 
 ## Run Backend Locally
 
@@ -169,27 +176,28 @@ Approval/rejection body example:
 
 ## Manual Database Script
 
-If you do not want to use EF Core migrations, run `database/create_tables.sql` against PostgreSQL. Migrations are still recommended for normal development.
+If you do not want to use EF Core migrations, run `database/create_tables.sql` against SQL Server. Migrations are still recommended for normal development.
 
 ## Deploy to Render from GitHub
 
 1. Push this repository to GitHub.
 2. In Render, create a new **Blueprint** and select this repository.
 3. Render reads `render.yaml` and creates:
-   - PostgreSQL database
    - ASP.NET Core backend web service
    - Angular static frontend site
 4. The backend service uses:
    - Root directory: `backend/LeaveManagement.API`
    - Build command: `dotnet publish -c Release -o out`
    - Start command: `dotnet out/LeaveManagement.API.dll`
-   - `ConnectionStrings__DefaultConnection` from the Render PostgreSQL database
+   - `ConnectionStrings__DefaultConnection` set manually to your SQL Server connection string
    - `ASPNETCORE_ENVIRONMENT=Production`
    - `FRONTEND_URL` set to the frontend URL
 5. The frontend service uses:
    - Root directory: `frontend`
    - Build command: `npm install && npm run build`
    - Publish directory: `dist/leave-management-frontend/browser`
+
+> Render does not provision SQL Server from `render.yaml`. Use a reachable SQL Server instance, then set `ConnectionStrings__DefaultConnection` in the Render backend environment variables.
 
 ## Important Render Follow-up Steps
 
@@ -201,8 +209,9 @@ apiUrl: 'https://YOUR-ACTUAL-BACKEND.onrender.com/api'
 
 2. Commit and push the frontend change.
 3. Redeploy the frontend static site.
-4. Update the backend `FRONTEND_URL` environment variable if your frontend URL is different from the placeholder in `render.yaml`.
-5. Redeploy the backend after changing `FRONTEND_URL`.
+4. Set the backend `ConnectionStrings__DefaultConnection` environment variable to your SQL Server connection string.
+5. Update the backend `FRONTEND_URL` environment variable if your frontend URL is different from the placeholder in `render.yaml`.
+6. Redeploy the backend after changing environment variables.
 
 ## Notes
 
