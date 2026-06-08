@@ -1,6 +1,8 @@
+using LeaveManagement.API.Constants;
 using LeaveManagement.API.Data;
 using LeaveManagement.API.DTOs;
 using LeaveManagement.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -8,6 +10,7 @@ using System.ComponentModel.DataAnnotations;
 namespace LeaveManagement.API.Controllers;
 
 [ApiController]
+[Authorize(Roles = AppRoles.Admin)]
 [Route("api/[controller]")]
 public class EmployeesController(LeaveManagementDbContext context, ILogger<EmployeesController> logger) : ControllerBase
 {
@@ -141,7 +144,7 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
         return !string.IsNullOrWhiteSpace(request.FirstName)
             && !string.IsNullOrWhiteSpace(request.LastName)
             && !string.IsNullOrWhiteSpace(request.Email)
-            && !string.IsNullOrWhiteSpace(request.Department)
+            && Departments.IsValid(request.Department)
             && new EmailAddressAttribute().IsValid(request.Email);
     }
 

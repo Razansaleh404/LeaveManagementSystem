@@ -1,3 +1,22 @@
+export type Role = 'Admin' | 'Manager' | 'Employee';
+
+export interface AuthUser {
+  employeeID: number;
+  email: string;
+  fullName: string;
+  role: Role;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse extends AuthUser {
+  token: string;
+  expiresAt: string;
+}
+
 export interface Employee {
   employeeID: number;
   firstName: string;

@@ -1,16 +1,21 @@
+using LeaveManagement.API.Auth;
+using LeaveManagement.API.Constants;
 using LeaveManagement.API.Data;
 using LeaveManagement.API.DTOs;
 using LeaveManagement.API.Models;
 using LeaveManagement.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagement.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequestValidator validator) : ControllerBase
 {
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetLeaveRequests()
     {
@@ -20,20 +25,20 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     [HttpGet("{id:int}")]
     public async Task<ActionResult<LeaveRequest>> GetLeaveRequest(int id)
     {
-        var request = await BaseQuery().FirstOrDefaultAsync(lr => lr.RequestID == id);
+        var request = await ScopedQuery().FirstOrDefaultAsync(lr => lr.RequestID == id);
         return request is null ? NotFound(new { message = "Leave request not found." }) : request;
     }
 
     [HttpGet("history")]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetHistory()
     {
-        return await BaseQuery().OrderByDescending(lr => lr.CreatedDate).ToListAsync();
+        return await ScopedQuery().OrderByDescending(lr => lr.CreatedDate).ToListAsync();
     }
 
     [HttpGet("filter")]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> FilterRequests([FromQuery] string? status, [FromQuery] DateOnly? fromDate, [FromQuery] DateOnly? toDate)
     {
-        var query = BaseQuery();
+        var query = ScopedQuery();
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -57,6 +62,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
         return await query.OrderByDescending(lr => lr.CreatedDate).ToListAsync();
     }
 
+    [Authorize(Roles = "Manager,Admin")]
     [HttpGet("pending")]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetPendingRequests()
     {
@@ -66,6 +72,12 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     [HttpPost]
     public async Task<ActionResult<LeaveRequest>> CreateLeaveRequest(LeaveRequestCreateDto dto)
     {
+        var currentEmployeeId = User.GetEmployeeId();
+        if (dto.EmployeeID != currentEmployeeId)
+        {
+            return Forbid();
+        }
+
         var errors = await validator.ValidateCreateAsync(dto);
         if (errors.Count > 0)
         {
@@ -74,7 +86,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
 
         var request = new LeaveRequest
         {
-            EmployeeID = dto.EmployeeID,
+            EmployeeID = currentEmployeeId,
             LeaveTypeID = dto.LeaveTypeID,
             FromDate = dto.FromDate,
             ToDate = dto.ToDate,
@@ -91,6 +103,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
         return CreatedAtAction(nameof(GetLeaveRequest), new { id = request.RequestID }, request);
     }
 
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateLeaveRequest(int id, LeaveRequestUpdateDto dto)
     {
@@ -119,6 +132,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
         return NoContent();
     }
 
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteLeaveRequest(int id)
     {
@@ -133,12 +147,14 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
         return NoContent();
     }
 
+    [Authorize(Roles = "Manager,Admin")]
     [HttpPut("{id:int}/approve")]
     public async Task<IActionResult> ApproveRequest(int id, ManagerDecisionDto dto)
     {
         return await UpdateStatus(id, LeaveStatus.Approved, dto.ManagerComments);
     }
 
+    [Authorize(Roles = "Manager,Admin")]
     [HttpPut("{id:int}/reject")]
     public async Task<IActionResult> RejectRequest(int id, ManagerDecisionDto dto)
     {
@@ -153,10 +169,21 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
             return NotFound(new { message = "Leave request not found." });
         }
 
+        if (request.Status != LeaveStatus.Pending)
+        {
+            return BadRequest(new { message = "Only pending requests can be approved or rejected." });
+        }
+
         request.Status = status;
         request.ManagerComments = managerComments;
         await context.SaveChangesAsync();
         return NoContent();
+    }
+
+    private IQueryable<LeaveRequest> ScopedQuery()
+    {
+        var query = BaseQuery();
+        return User.IsInRole(AppRoles.Admin) ? query : query.Where(lr => lr.EmployeeID == User.GetEmployeeId());
     }
 
     private IQueryable<LeaveRequest> BaseQuery()

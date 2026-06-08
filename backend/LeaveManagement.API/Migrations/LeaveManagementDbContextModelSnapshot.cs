@@ -20,6 +20,48 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+
+        modelBuilder.Entity("LeaveManagement.API.Models.AppUser", b =>
+        {
+            b.Property<int>("AppUserID")
+                .ValueGeneratedOnAdd()
+                .HasColumnType("int");
+
+            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AppUserID"));
+
+            b.Property<string>("Email")
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnType("nvarchar(100)");
+
+            b.Property<int>("EmployeeID")
+                .HasColumnType("int");
+
+            b.Property<string>("PasswordHash")
+                .IsRequired()
+                .HasMaxLength(128)
+                .HasColumnType("nvarchar(128)");
+
+            b.Property<string>("Role")
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnType("nvarchar(20)");
+
+            b.HasKey("AppUserID");
+            b.HasIndex("Email").IsUnique();
+            b.HasIndex("EmployeeID").IsUnique();
+
+            b.ToTable("AppUsers", t =>
+            {
+                t.HasCheckConstraint("CK_AppUsers_Role", "[Role] IN ('Admin', 'Manager', 'Employee')");
+            });
+
+            b.HasData(
+                new { AppUserID = 1, Email = "admin@demo.com", EmployeeID = -1, PasswordHash = "admin-demo-salt:0xJKYowDmRkZgbzycMBHGAWXJJKeGALbeBPiFWHmE8s=", Role = "Admin" },
+                new { AppUserID = 2, Email = "manager@demo.com", EmployeeID = -2, PasswordHash = "manager-demo-salt:d85aZJikAQ2wmK5/hJIAbAd43LGy/RzLiT2zfUYiBmc=", Role = "Manager" },
+                new { AppUserID = 3, Email = "employee@demo.com", EmployeeID = -3, PasswordHash = "employee-demo-salt:fP9vyvjXHJA08EsJkkieGeCV+OkcMSseLeG1uGkTNL0=", Role = "Employee" });
+        });
+
         modelBuilder.Entity("LeaveManagement.API.Models.Employee", b =>
         {
             b.Property<int>("EmployeeID")
@@ -55,7 +97,15 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
 
             b.HasKey("EmployeeID");
             b.HasIndex("Email").IsUnique();
-            b.ToTable("Employees");
+            b.ToTable("Employees", t =>
+            {
+                t.HasCheckConstraint("CK_Employees_Department", "[Department] IN ('IT', 'HR', 'Finance', 'Marketing', 'Sales', 'Operations', 'Engineering', 'Customer Support')");
+            });
+
+            b.HasData(
+                new { EmployeeID = -1, Department = "IT", Email = "admin@demo.com", FirstName = "Admin", IsActive = true, LastName = "User" },
+                new { EmployeeID = -2, Department = "Operations", Email = "manager@demo.com", FirstName = "Manager", IsActive = true, LastName = "User" },
+                new { EmployeeID = -3, Department = "Engineering", Email = "employee@demo.com", FirstName = "Employee", IsActive = true, LastName = "User" });
         });
 
         modelBuilder.Entity("LeaveManagement.API.Models.LeaveType", b =>
@@ -111,6 +161,18 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
                 t.HasCheckConstraint("CK_LeaveRequests_DateRange", "[ToDate] >= [FromDate]");
                 t.HasCheckConstraint("CK_LeaveRequests_Status", "[Status] IN ('Pending', 'Approved', 'Rejected')");
             });
+        });
+
+
+        modelBuilder.Entity("LeaveManagement.API.Models.AppUser", b =>
+        {
+            b.HasOne("LeaveManagement.API.Models.Employee", "Employee")
+                .WithOne()
+                .HasForeignKey("LeaveManagement.API.Models.AppUser", "EmployeeID")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.Navigation("Employee");
         });
 
         modelBuilder.Entity("LeaveManagement.API.Models.LeaveRequest", b =>
