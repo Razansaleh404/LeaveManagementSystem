@@ -1,0 +1,55 @@
+<section class="login-shell">
+  <div class="login-hero card app-card">
+    <div class="card-body p-4 p-lg-5">
+      <p class="eyebrow mb-2">Secure Portal</p>
+      <h1 class="page-title mb-3">Welcome to Leave Management</h1>
+      <p class="page-subtitle mb-4">Sign in with the right role so employees can request leave, managers can approve requests, and admins can manage employee records.</p>
+
+      <div class="login-highlights">
+        <div><span class="highlight-icon">✓</span> Employee self-service requests</div>
+        <div><span class="highlight-icon">✓</span> Role-based navigation</div>
+        <div><span class="highlight-icon">✓</span> Manager approval workspace</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card app-card login-card">
+    <div class="card-body p-4 p-lg-5">
+      <h2 class="section-title mb-1">Sign in</h2>
+      <p class="text-muted mb-4">Choose the role that matches the work you need to do.</p>
+
+      <div *ngIf="error" class="alert app-alert alert-danger" role="alert">{{ error }}</div>
+
+      <div class="role-panel employee-panel mb-4">
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <h3 class="role-title mb-1">Employee</h3>
+            <p class="text-muted mb-0 small">Request leave as yourself.</p>
+          </div>
+          <span class="status-pill status-pill-new">Self service</span>
+        </div>
+        <label class="form-label" for="employeeProfile">Employee profile</label>
+        <select class="form-select mb-3" id="employeeProfile" name="employeeProfile" [(ngModel)]="selectedEmployeeId" [disabled]="loading">
+          <option [ngValue]="0">{{ loading ? 'Loading employees...' : 'Select your name' }}</option>
+          <option *ngFor="let employee of employees" [ngValue]="employee.employeeID">{{ employee.firstName }} {{ employee.lastName }} — {{ employee.department }}</option>
+        </select>
+        <button class="btn btn-primary w-100" type="button" (click)="signInAsEmployee()" [disabled]="loading">Continue as Employee</button>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <button class="role-button manager-button" type="button" (click)="signInAsManager()">
+            <span class="role-title d-block">Manager</span>
+            <span class="small text-muted">Review pending leave requests.</span>
+          </button>
+        </div>
+        <div class="col-md-6">
+          <button class="role-button admin-button" type="button" (click)="signInAsAdmin()">
+            <span class="role-title d-block">Admin</span>
+            <span class="small text-muted">Manage employees and settings.</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
