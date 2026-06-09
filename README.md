@@ -41,6 +41,9 @@ render.yaml
 - `LastName` required, max 50
 - `Email` required, max 100, unique
 - `Department` required, max 50
+- `Role` required, Employee or Manager, defaults to Employee
+- `PasswordHash` required for authentication
+- `PasswordSalt` required for authentication
 - `IsActive` defaults to true
 
 ### LeaveTypes
@@ -176,7 +179,7 @@ Approval/rejection body example:
 
 ## Manual Database Script
 
-If you do not want to use EF Core migrations, run `database/create_tables.sql` against SQL Server. Migrations are still recommended for normal development.
+If you do not want to use EF Core migrations, run `database/create_tables.sql` against SQL Server. The script is idempotent for the authentication columns, so it can also update an older manually-created `Employees` table with `Role`, `PasswordHash`, and `PasswordSalt`. Migrations are still recommended for normal development.
 
 ## Deploy to Render from GitHub
 

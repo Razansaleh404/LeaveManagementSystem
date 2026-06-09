@@ -17,9 +17,32 @@ public static class DatabaseSeeder
             return;
         }
 
+        await EnsureAuthenticationColumnsAsync(context);
+
         await EnsureUserAsync(context, passwordService, "manager@leave.local", "Mia", "Manager", "Operations", UserRole.Manager);
         await EnsureUserAsync(context, passwordService, "employee@leave.local", "Evan", "Employee", "Engineering", UserRole.Employee);
         await context.SaveChangesAsync();
+    }
+
+    private static async Task EnsureAuthenticationColumnsAsync(LeaveManagementDbContext context)
+    {
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH(N'dbo.Employees', N'Role') IS NULL
+                    ALTER TABLE dbo.Employees ADD [Role] nvarchar(20) NOT NULL CONSTRAINT DF_Employees_Role DEFAULT N'Employee';
+
+                IF COL_LENGTH(N'dbo.Employees', N'PasswordHash') IS NULL
+                    ALTER TABLE dbo.Employees ADD PasswordHash nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordHash DEFAULT N'';
+
+                IF COL_LENGTH(N'dbo.Employees', N'PasswordSalt') IS NULL
+                    ALTER TABLE dbo.Employees ADD PasswordSalt nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordSalt DEFAULT N'';
+
+                IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
+                    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager'));
+            END
+            """);
     }
 
     private static async Task EnsureUserAsync(

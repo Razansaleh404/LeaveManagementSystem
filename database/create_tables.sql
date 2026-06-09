@@ -9,9 +9,29 @@ BEGIN
         LastName nvarchar(50) NOT NULL,
         Email nvarchar(100) NOT NULL,
         Department nvarchar(50) NOT NULL,
+        Role nvarchar(20) NOT NULL CONSTRAINT DF_Employees_Role DEFAULT N'Employee',
+        PasswordHash nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordHash DEFAULT N'',
+        PasswordSalt nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordSalt DEFAULT N'',
         IsActive bit NOT NULL CONSTRAINT DF_Employees_IsActive DEFAULT 1,
-        CONSTRAINT AK_Employees_Email UNIQUE (Email)
+        CONSTRAINT AK_Employees_Email UNIQUE (Email),
+        CONSTRAINT CK_Employees_Role CHECK (Role IN (N'Employee', N'Manager'))
     );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.Employees', N'Role') IS NULL
+        ALTER TABLE dbo.Employees ADD Role nvarchar(20) NOT NULL CONSTRAINT DF_Employees_Role DEFAULT N'Employee';
+
+    IF COL_LENGTH(N'dbo.Employees', N'PasswordHash') IS NULL
+        ALTER TABLE dbo.Employees ADD PasswordHash nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordHash DEFAULT N'';
+
+    IF COL_LENGTH(N'dbo.Employees', N'PasswordSalt') IS NULL
+        ALTER TABLE dbo.Employees ADD PasswordSalt nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordSalt DEFAULT N'';
+
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
+        ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK (Role IN (N'Employee', N'Manager'));
 END;
 GO
 
