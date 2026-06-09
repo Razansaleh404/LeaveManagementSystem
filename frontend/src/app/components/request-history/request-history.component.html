@@ -1,15 +1,80 @@
-<div class="card"><div class="card-body">
-  <h3 class="card-title mb-3">Request History</h3>
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <div class="row g-2 align-items-end mb-3">
-    <div class="col-md-3"><label class="form-label">Status</label><select class="form-select" [(ngModel)]="status"><option value="">All</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select></div>
-    <div class="col-md-3"><label class="form-label">From Date</label><input class="form-control" type="date" [(ngModel)]="fromDate"></div>
-    <div class="col-md-3"><label class="form-label">To Date</label><input class="form-control" type="date" [(ngModel)]="toDate"></div>
-    <div class="col-md-3"><button class="btn btn-primary me-2" (click)="applyFilters()">Filter</button><button class="btn btn-outline-secondary" (click)="clear()">Clear</button></div>
+<section class="page-header flex-column flex-lg-row align-items-start align-items-lg-center gap-3 mb-4">
+  <div>
+    <div class="eyebrow">Requests</div>
+    <h1 class="page-title mb-1">Request History</h1>
+    <p class="page-subtitle mb-0">Review leave activity, narrow by status, and quickly find closed requests.</p>
   </div>
-  <div *ngIf="loading" class="text-center py-4">Loading requests...</div>
-  <div class="table-responsive" *ngIf="!loading"><table class="table table-striped align-middle"><thead><tr><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th>Manager Comments</th><th>Created</th></tr></thead><tbody>
-    <tr *ngFor="let r of requests"><td>{{ r.employee?.firstName }} {{ r.employee?.lastName }}</td><td>{{ r.leaveType?.leaveName }}</td><td>{{ r.fromDate }} to {{ r.toDate }}</td><td>{{ r.numberOfDays }}</td><td>{{ r.reason }}</td><td><span class="badge" [ngClass]="badge(r.status)">{{ r.status }}</span></td><td>{{ r.managerComments || '-' }}</td><td>{{ r.createdDate | date:'medium' }}</td></tr>
-    <tr *ngIf="requests.length === 0"><td colspan="8" class="text-center text-muted">No requests found.</td></tr>
-  </tbody></table></div>
+  <button class="btn btn-outline-primary" type="button" (click)="load()" [disabled]="loading">Refresh</button>
+</section>
+
+<div *ngIf="error" class="alert alert-danger app-alert">{{ error }}</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6"><div class="metric-card"><span>Total</span><strong>{{ requests.length }}</strong></div></div>
+  <div class="col-md-3 col-6"><div class="metric-card metric-warning"><span>Pending</span><strong>{{ pendingCount }}</strong></div></div>
+  <div class="col-md-3 col-6"><div class="metric-card metric-success"><span>Approved</span><strong>{{ approvedCount }}</strong></div></div>
+  <div class="col-md-3 col-6"><div class="metric-card metric-danger"><span>Rejected</span><strong>{{ rejectedCount }}</strong></div></div>
+</div>
+
+<div class="card app-card request-board"><div class="card-body p-4">
+  <div class="filter-panel mb-4">
+    <div class="status-tabs" role="group" aria-label="Filter requests by status">
+      <button
+        *ngFor="let filter of statusFilters"
+        type="button"
+        class="status-tab"
+        [class.active]="status === filter.label"
+        (click)="setStatus(filter.label)">
+        <span>{{ filter.label }}</span>
+        <small>{{ filter.helper }}</small>
+        <strong>{{ countFor(filter.label) }}</strong>
+      </button>
+    </div>
+
+    <div class="row g-3 align-items-end mt-1">
+      <div class="col-lg-4">
+        <label class="form-label">Search requests</label>
+        <input class="form-control" type="search" placeholder="Employee, leave type, reason..." [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label class="form-label">From Date</label>
+        <input class="form-control" type="date" [(ngModel)]="fromDate" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label class="form-label">To Date</label>
+        <input class="form-control" type="date" [(ngModel)]="toDate" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="col-md-6 col-lg-4 d-flex gap-2 justify-content-md-end">
+        <button class="btn btn-outline-secondary" type="button" (click)="clear()">Clear filters</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state py-5">Loading requests...</div>
+
+  <div class="request-list" *ngIf="!loading && filteredRequests.length > 0">
+    <article class="request-card" *ngFor="let r of filteredRequests">
+      <div class="request-card-main">
+        <div class="request-avatar">{{ r.employee?.firstName?.charAt(0) }}{{ r.employee?.lastName?.charAt(0) }}</div>
+        <div>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+            <h2 class="request-title mb-0">{{ r.employee?.firstName }} {{ r.employee?.lastName }}</h2>
+            <span class="badge" [ngClass]="badge(r.status)">{{ r.status }}</span>
+          </div>
+          <div class="request-meta">{{ r.leaveType?.leaveName }} · {{ r.fromDate }} to {{ r.toDate }} · {{ r.numberOfDays }} day(s)</div>
+          <p class="request-reason mb-0">{{ r.reason }}</p>
+        </div>
+      </div>
+      <div class="request-card-side">
+        <span class="request-date">Created {{ r.createdDate | date:'mediumDate' }}</span>
+        <span class="manager-note">{{ r.managerComments || 'No manager comments yet' }}</span>
+      </div>
+    </article>
+  </div>
+
+  <div *ngIf="!loading && filteredRequests.length === 0" class="empty-state request-empty">
+    <div class="empty-icon">☕</div>
+    <h2>No requests match these filters.</h2>
+    <p>Try switching status tabs, clearing dates, or searching for another employee.</p>
+  </div>
 </div></div>
