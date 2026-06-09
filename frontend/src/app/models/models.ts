@@ -1,7 +1,3 @@
-export type UserRole = 'Employee' | 'Manager' | 'Admin';
-
-export const DEPARTMENTS = ['Human Resources', 'Finance', 'Engineering', 'Sales', 'Marketing', 'Operations', 'Customer Support'] as const;
-
 export interface Employee {
   employeeID: number;
   firstName: string;

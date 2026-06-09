@@ -2,13 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Employee, LeaveRequestCreate, LeaveType } from '../../models/models';
-import { AuthService } from '../../services/auth.service';
+import { EmployeeService } from '../../services/employee.service';
 import { LeaveRequestService } from '../../services/leave-request.service';
 import { LeaveTypeService } from '../../services/leave-type.service';
 
 @Component({ selector: 'app-leave-request', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './leave-request.component.html' })
 export class LeaveRequestComponent implements OnInit {
-  employee: Employee | null = null;
+  employees: Employee[] = [];
   leaveTypes: LeaveType[] = [];
   form: LeaveRequestCreate = { employeeID: 0, leaveTypeID: 0, fromDate: '', toDate: '', reason: '' };
   numberOfDays = 0;
@@ -16,18 +16,8 @@ export class LeaveRequestComponent implements OnInit {
   message = '';
   error = '';
 
-  constructor(
-    private readonly auth: AuthService,
-    private readonly leaveTypesApi: LeaveTypeService,
-    private readonly requestsApi: LeaveRequestService
-  ) {}
-
-  ngOnInit(): void {
-    this.employee = this.auth.session?.employee ?? null;
-    this.form.employeeID = this.employee?.employeeID ?? 0;
-    this.leaveTypesApi.getAll().subscribe(data => this.leaveTypes = data);
-  }
-
+  constructor(private readonly employeesApi: EmployeeService, private readonly leaveTypesApi: LeaveTypeService, private readonly requestsApi: LeaveRequestService) {}
+  ngOnInit(): void { this.employeesApi.getAll().subscribe(data => this.employees = data.filter(e => e.isActive)); this.leaveTypesApi.getAll().subscribe(data => this.leaveTypes = data); }
   get today(): string { return new Date().toISOString().slice(0, 10); }
 
   calculateDays(): void {
@@ -37,7 +27,6 @@ export class LeaveRequestComponent implements OnInit {
   }
 
   validationError(): string {
-    if (!this.form.employeeID) return 'You must be signed in as an employee to request leave.';
     if (this.form.fromDate && this.form.fromDate < this.today) return 'Leave dates cannot be in the past.';
     if (this.form.toDate && this.form.toDate < this.today) return 'Leave dates cannot be in the past.';
     if (this.form.fromDate && this.form.toDate && this.form.toDate < this.form.fromDate) return 'To date must be greater than or equal to from date.';
@@ -46,12 +35,11 @@ export class LeaveRequestComponent implements OnInit {
   }
 
   submit(): void {
-    this.form.employeeID = this.employee?.employeeID ?? 0;
     const validation = this.validationError();
     if (validation) { this.error = validation; return; }
     this.loading = true; this.error = ''; this.message = '';
     this.requestsApi.create(this.form).subscribe({
-      next: () => { this.message = 'Leave request submitted successfully.'; this.form = { employeeID: this.employee?.employeeID ?? 0, leaveTypeID: 0, fromDate: '', toDate: '', reason: '' }; this.numberOfDays = 0; this.loading = false; },
+      next: () => { this.message = 'Leave request submitted successfully.'; this.form = { employeeID: 0, leaveTypeID: 0, fromDate: '', toDate: '', reason: '' }; this.numberOfDays = 0; this.loading = false; },
       error: err => { this.error = err?.error?.message ?? 'Could not submit request.'; this.loading = false; }
     });
   }

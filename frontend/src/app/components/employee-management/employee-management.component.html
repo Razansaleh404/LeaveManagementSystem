@@ -45,10 +45,7 @@
 
           <div class="mb-3">
             <label class="form-label" for="department">Department <span class="required">*</span></label>
-            <select class="form-select" id="department" name="department" [(ngModel)]="form.department" required #department="ngModel" [class.is-invalid]="department.invalid && department.touched">
-              <option value="">Select department</option>
-              <option *ngFor="let departmentName of departments" [value]="departmentName">{{ departmentName }}</option>
-            </select>
+            <input class="form-control" id="department" name="department" [(ngModel)]="form.department" maxlength="50" required #department="ngModel" [class.is-invalid]="department.invalid && department.touched">
             <div class="invalid-feedback d-block" *ngIf="department.invalid && department.touched">Department is required.</div>
           </div>
 
