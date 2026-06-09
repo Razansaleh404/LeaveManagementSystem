@@ -98,10 +98,11 @@ export class EmployeeManagementComponent implements OnInit {
       firstName: this.form.firstName.trim(),
       lastName: this.form.lastName.trim(),
       email: this.form.email.trim(),
-      department: this.form.department.trim()
+      department: this.form.department.trim(),
+      password: this.form.password?.trim() || undefined
     };
   }
 
-  private emptyEmployee(): Employee { return { employeeID: 0, firstName: '', lastName: '', email: '', department: '', isActive: true }; }
+  private emptyEmployee(): Employee { return { employeeID: 0, firstName: '', lastName: '', email: '', department: '', role: 'Employee', password: '', isActive: true }; }
   private showError(err: any, fallback: string): void { this.error = err?.error?.message ?? fallback; this.loading = false; this.saving = false; }
 }

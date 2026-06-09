@@ -16,5 +16,11 @@ public class EmployeeCreateUpdateDto
     [Required, MaxLength(50)]
     public string Department { get; set; } = string.Empty;
 
+    [Required, MaxLength(20)]
+    public string Role { get; set; } = "Employee";
+
+    [MinLength(8)]
+    public string? Password { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

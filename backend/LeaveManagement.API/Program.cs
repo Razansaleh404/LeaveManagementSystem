@@ -1,6 +1,9 @@
+using LeaveManagement.API.Authentication;
 using LeaveManagement.API.Data;
+using LeaveManagement.API.Models;
 using LeaveManagement.API.Middleware;
 using LeaveManagement.API.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +22,18 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddScoped<LeaveRequestValidator>();
+builder.Services.AddSingleton<PasswordService>();
+builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddAuthentication("Jwt")
+    .AddScheme<AuthenticationSchemeOptions, JwtAuthenticationHandler>("Jwt", _ => { });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("EmployeeOnly", policy => policy.RequireRole(UserRole.Employee));
+    options.AddPolicy("ManagerOnly", policy => policy.RequireRole(UserRole.Manager));
+    options.AddPolicy("EmployeeOrManager", policy => policy.RequireRole(UserRole.Employee, UserRole.Manager));
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
@@ -48,9 +62,10 @@ app.UseSwaggerUI();
 
 app.UseCors("AngularCors");
 
-// Authentication is intentionally not enabled yet. JWT role-based authorization can be
-// added here later by registering authentication/authorization policies before MapControllers.
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+await DatabaseSeeder.SeedDemoUsersAsync(app.Services);
 
 app.Run();
