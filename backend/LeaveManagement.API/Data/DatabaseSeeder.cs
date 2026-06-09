@@ -29,18 +29,31 @@ public static class DatabaseSeeder
         await context.Database.ExecuteSqlRawAsync(
             """
             IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
+                AND COL_LENGTH(N'dbo.Employees', N'Role') IS NULL
             BEGIN
-                IF COL_LENGTH(N'dbo.Employees', N'Role') IS NULL
-                    ALTER TABLE dbo.Employees ADD [Role] nvarchar(20) NOT NULL CONSTRAINT DF_Employees_Role DEFAULT N'Employee';
+                ALTER TABLE dbo.Employees ADD [Role] nvarchar(20) NOT NULL CONSTRAINT DF_Employees_Role DEFAULT N'Employee';
+            END
+            """);
 
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
+            BEGIN
                 IF COL_LENGTH(N'dbo.Employees', N'PasswordHash') IS NULL
                     ALTER TABLE dbo.Employees ADD PasswordHash nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordHash DEFAULT N'';
 
                 IF COL_LENGTH(N'dbo.Employees', N'PasswordSalt') IS NULL
                     ALTER TABLE dbo.Employees ADD PasswordSalt nvarchar(max) NOT NULL CONSTRAINT DF_Employees_PasswordSalt DEFAULT N'';
+            END
+            """);
 
-                IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
-                    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager'));
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
+                AND COL_LENGTH(N'dbo.Employees', N'Role') IS NOT NULL
+                AND NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
+            BEGIN
+                ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager'));
             END
             """);
     }
