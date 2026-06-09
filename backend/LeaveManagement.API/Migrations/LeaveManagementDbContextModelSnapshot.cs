@@ -53,9 +53,27 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
                 .HasMaxLength(50)
                 .HasColumnType("nvarchar(50)");
 
+            b.Property<string>("PasswordHash")
+                .IsRequired()
+                .HasColumnType("nvarchar(max)");
+
+            b.Property<string>("PasswordSalt")
+                .IsRequired()
+                .HasColumnType("nvarchar(max)");
+
+            b.Property<string>("Role")
+                .IsRequired()
+                .ValueGeneratedOnAdd()
+                .HasMaxLength(20)
+                .HasColumnType("nvarchar(20)")
+                .HasDefaultValue("Employee");
+
             b.HasKey("EmployeeID");
             b.HasIndex("Email").IsUnique();
-            b.ToTable("Employees");
+            b.ToTable("Employees", t =>
+            {
+                t.HasCheckConstraint("CK_Employees_Role", "[Role] IN ('Employee', 'Manager')");
+            });
         });
 
         modelBuilder.Entity("LeaveManagement.API.Models.LeaveType", b =>

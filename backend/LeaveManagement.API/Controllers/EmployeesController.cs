@@ -1,6 +1,8 @@
 using LeaveManagement.API.Data;
 using LeaveManagement.API.DTOs;
 using LeaveManagement.API.Models;
+using LeaveManagement.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -9,7 +11,8 @@ namespace LeaveManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EmployeesController(LeaveManagementDbContext context, ILogger<EmployeesController> logger) : ControllerBase
+[Authorize(Roles = UserRole.Manager)]
+public class EmployeesController(LeaveManagementDbContext context, ILogger<EmployeesController> logger, PasswordService passwordService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees()
@@ -55,8 +58,13 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             LastName = request.LastName.Trim(),
             Email = request.Email.Trim(),
             Department = request.Department.Trim(),
+            Role = request.Role,
             IsActive = request.IsActive
         };
+
+        var password = passwordService.HashPassword(request.Password ?? "Password123!");
+        employee.PasswordHash = password.Hash;
+        employee.PasswordSalt = password.Salt;
 
         context.Employees.Add(employee);
 
@@ -97,7 +105,14 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
         employee.LastName = request.LastName.Trim();
         employee.Email = request.Email.Trim();
         employee.Department = request.Department.Trim();
+        employee.Role = request.Role;
         employee.IsActive = request.IsActive;
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            var password = passwordService.HashPassword(request.Password);
+            employee.PasswordHash = password.Hash;
+            employee.PasswordSalt = password.Salt;
+        }
 
         try
         {
@@ -142,6 +157,7 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             && !string.IsNullOrWhiteSpace(request.LastName)
             && !string.IsNullOrWhiteSpace(request.Email)
             && !string.IsNullOrWhiteSpace(request.Department)
+            && UserRole.IsValid(request.Role)
             && new EmailAddressAttribute().IsValid(request.Email);
     }
 

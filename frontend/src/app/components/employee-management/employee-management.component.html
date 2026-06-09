@@ -49,6 +49,22 @@
             <div class="invalid-feedback d-block" *ngIf="department.invalid && department.touched">Department is required.</div>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label" for="role">Role <span class="required">*</span></label>
+            <select class="form-select" id="role" name="role" [(ngModel)]="form.role" required>
+              <option value="Employee">Employee</option>
+              <option value="Manager">Manager</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="password">{{ form.employeeID ? 'New Password' : 'Password' }}</label>
+            <input class="form-control" id="password" type="password" name="password" [(ngModel)]="form.password" minlength="8" #password="ngModel" [required]="!form.employeeID" [class.is-invalid]="password.invalid && password.touched">
+            <div class="invalid-feedback d-block" *ngIf="password.errors?.['required'] && password.touched">Password is required for new employees.</div>
+            <div class="invalid-feedback d-block" *ngIf="password.errors?.['minlength'] && password.touched">Password must be at least 8 characters.</div>
+            <div class="form-text" *ngIf="form.employeeID">Leave blank to keep the current password.</div>
+          </div>
+
           <div class="form-check form-switch mb-4">
             <input class="form-check-input" type="checkbox" name="isActive" [(ngModel)]="form.isActive" id="isActive">
             <label class="form-check-label" for="isActive">Employee is active</label>
@@ -88,6 +104,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Department</th>
+                <th>Role</th>
                 <th>Status</th>
                 <th class="text-end">Actions</th>
               </tr>
@@ -100,6 +117,7 @@
                 </td>
                 <td>{{ employee.email }}</td>
                 <td>{{ employee.department }}</td>
+                <td><span class="badge rounded-pill bg-info text-dark">{{ employee.role }}</span></td>
                 <td><span class="badge rounded-pill" [ngClass]="employee.isActive ? 'bg-success' : 'bg-secondary'">{{ employee.isActive ? 'Active' : 'Inactive' }}</span></td>
                 <td class="text-end action-cell">
                   <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="edit(employee)">Edit</button>
@@ -107,7 +125,7 @@
                 </td>
               </tr>
               <tr *ngIf="employees.length === 0">
-                <td colspan="5" class="empty-state">No employees found.</td>
+                <td colspan="6" class="empty-state">No employees found.</td>
               </tr>
             </tbody>
           </table>

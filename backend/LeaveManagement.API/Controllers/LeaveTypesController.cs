@@ -1,5 +1,6 @@
 using LeaveManagement.API.Data;
 using LeaveManagement.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace LeaveManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = UserRole.Employee + "," + UserRole.Manager)]
 public class LeaveTypesController(LeaveManagementDbContext context) : ControllerBase
 {
     [HttpGet]
@@ -16,6 +18,7 @@ public class LeaveTypesController(LeaveManagementDbContext context) : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = UserRole.Manager)]
     public async Task<ActionResult<LeaveType>> CreateLeaveType(LeaveType leaveType)
     {
         context.LeaveTypes.Add(leaveType);
@@ -24,6 +27,7 @@ public class LeaveTypesController(LeaveManagementDbContext context) : Controller
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = UserRole.Manager)]
     public async Task<IActionResult> UpdateLeaveType(int id, LeaveType leaveType)
     {
         if (id != leaveType.LeaveTypeID)
@@ -42,6 +46,7 @@ public class LeaveTypesController(LeaveManagementDbContext context) : Controller
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = UserRole.Manager)]
     public async Task<IActionResult> DeleteLeaveType(int id)
     {
         var leaveType = await context.LeaveTypes.FindAsync(id);

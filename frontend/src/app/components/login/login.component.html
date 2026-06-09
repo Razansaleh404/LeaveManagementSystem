@@ -1,0 +1,32 @@
+<div class="login-shell">
+  <div class="card login-card">
+    <div class="card-body p-4 p-lg-5">
+      <div class="text-center mb-4">
+        <span class="brand-mark mx-auto mb-3">L</span>
+        <p class="eyebrow mb-1">Secure sign in</p>
+        <h1 class="page-title mb-2">Leave Management</h1>
+        <p class="page-subtitle mb-0">Use your employee or manager account to continue.</p>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger app-alert">{{ error }}</div>
+
+      <form (ngSubmit)="login()" #loginForm="ngForm" class="d-grid gap-3">
+        <div>
+          <label class="form-label" for="email">Email</label>
+          <input id="email" class="form-control" type="email" name="email" [(ngModel)]="email" required email autocomplete="username">
+        </div>
+        <div>
+          <label class="form-label" for="password">Password</label>
+          <input id="password" class="form-control" type="password" name="password" [(ngModel)]="password" required autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary btn-lg" [disabled]="loginForm.invalid || loading">{{ loading ? 'Signing in...' : 'Sign in' }}</button>
+      </form>
+
+      <div class="demo-credentials mt-4">
+        <strong>Demo accounts</strong>
+        <div>Employee: employee@leave.local / Password123!</div>
+        <div>Manager: manager@leave.local / Password123!</div>
+      </div>
+    </div>
+  </div>
+</div>

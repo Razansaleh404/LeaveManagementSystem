@@ -1,10 +1,29 @@
+export type UserRole = 'Employee' | 'Manager';
+
 export interface Employee {
   employeeID: number;
   firstName: string;
   lastName: string;
   email: string;
   department: string;
+  role: UserRole;
+  password?: string;
   isActive: boolean;
+}
+
+export interface AuthUser {
+  employeeID: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  role: UserRole;
+}
+
+export interface LoginResponse {
+  token: string;
+  expiresAt: string;
+  user: AuthUser;
 }
 
 export interface LeaveType {

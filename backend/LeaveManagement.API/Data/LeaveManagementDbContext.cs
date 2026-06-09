@@ -22,7 +22,14 @@ public class LeaveManagementDbContext(DbContextOptions<LeaveManagementDbContext>
             entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Department).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Role).IsRequired().HasMaxLength(20).HasDefaultValue(UserRole.Employee);
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.PasswordSalt).IsRequired();
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Employees_Role", "[Role] IN ('Employee', 'Manager')");
+            });
         });
 
         modelBuilder.Entity<LeaveType>(entity =>
