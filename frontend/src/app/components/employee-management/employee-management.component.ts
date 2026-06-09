@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { DEPARTMENTS, Employee } from '../../models/models';
+import { Employee } from '../../models/models';
 import { EmployeeService } from '../../services/employee.service';
 
 @Component({ selector: 'app-employee-management', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './employee-management.component.html' })
 export class EmployeeManagementComponent implements OnInit {
-  departments = [...DEPARTMENTS];
   employees: Employee[] = [];
   form: Employee = this.emptyEmployee();
   searchTerm = '';
