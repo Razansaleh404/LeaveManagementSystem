@@ -4,22 +4,41 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
+type DemoAccount = { label: string; role: string; email: string; password: string; description: string };
+
 @Component({ selector: 'app-login', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './login.component.html' })
 export class LoginComponent {
   email = '';
   password = '';
   loading = false;
   error = '';
+  showPassword = false;
+  selectedDemoEmail = '';
 
-  readonly demoAccounts = [
-    { label: 'Employee demo', email: 'employee@leave.local', password: 'Password123!' },
-    { label: 'Manager demo', email: 'manager@leave.local', password: 'Password123!' }
+  readonly demoAccounts: DemoAccount[] = [
+    {
+      label: 'Employee demo',
+      role: 'Employee',
+      email: 'employee@leave.local',
+      password: 'Password123!',
+      description: 'Submit leave requests and review your request history.'
+    },
+    {
+      label: 'Manager demo',
+      role: 'Manager',
+      email: 'manager@leave.local',
+      password: 'Password123!',
+      description: 'Review, approve, and reject team leave requests.'
+    }
   ];
 
   constructor(private readonly auth: AuthService, private readonly router: Router) {}
 
+  get canSubmit(): boolean { return !this.loading; }
+
   login(loginForm: NgForm): void {
     this.error = '';
+    this.email = this.email.trim().toLowerCase();
 
     if (loginForm.invalid) {
       loginForm.control.markAllAsTouched();
@@ -27,8 +46,7 @@ export class LoginComponent {
     }
 
     this.loading = true;
-    const email = this.email.trim().toLowerCase();
-    this.auth.login(email, this.password).subscribe({
+    this.auth.login(this.email, this.password).subscribe({
       next: response => {
         this.loading = false;
         this.router.navigateByUrl(this.auth.redirectPathForRole(response.user.role));
@@ -40,9 +58,18 @@ export class LoginComponent {
     });
   }
 
-  useDemo(account: { email: string; password: string }, loginForm: NgForm): void {
+  normalizeEmail(): void {
+    this.email = this.email.trim().toLowerCase();
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  useDemo(account: DemoAccount, loginForm: NgForm): void {
     this.email = account.email;
     this.password = account.password;
+    this.selectedDemoEmail = account.email;
     this.error = '';
     loginForm.form.markAsPristine();
     loginForm.form.markAsUntouched();

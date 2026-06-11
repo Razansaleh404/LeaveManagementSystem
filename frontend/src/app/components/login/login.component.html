@@ -1,11 +1,30 @@
-<div class="login-shell">
+<div class="login-shell login-shell-enhanced">
+  <div class="login-hero app-card">
+    <div class="login-hero-content">
+      <span class="brand-mark mb-4">L</span>
+      <p class="eyebrow mb-2">Leave Management</p>
+      <h1 class="login-hero-title">One place for requests, approvals, and team visibility.</h1>
+      <p class="login-hero-copy mb-4">Sign in to request time away, review past decisions, or manage your team's pending leave queue.</p>
+
+      <div class="login-benefits">
+        <div>
+          <strong>Employees</strong>
+          <span>Submit leave requests with clear dates and status tracking.</span>
+        </div>
+        <div>
+          <strong>Managers</strong>
+          <span>Prioritize pending approvals and keep decision notes together.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card login-card">
     <div class="card-body p-4 p-lg-5">
-      <div class="text-center mb-4">
-        <span class="brand-mark mx-auto mb-3">L</span>
+      <div class="mb-4">
         <p class="eyebrow mb-1">Secure sign in</p>
-        <h1 class="page-title mb-2">Leave Management</h1>
-        <p class="page-subtitle mb-0">Sign in with an active employee or manager account.</p>
+        <h2 class="page-title mb-2">Welcome back</h2>
+        <p class="page-subtitle mb-0">Use your active employee or manager account to continue.</p>
       </div>
 
       <div *ngIf="error" class="alert alert-danger app-alert" role="alert">{{ error }}</div>
@@ -19,38 +38,63 @@
             type="email"
             name="email"
             [(ngModel)]="email"
+            (blur)="normalizeEmail()"
             required
             email
             autocomplete="username"
+            placeholder="name@company.com"
             #emailModel="ngModel"
             [class.is-invalid]="emailModel.invalid && emailModel.touched">
           <div class="invalid-feedback d-block" *ngIf="emailModel.errors?.['required'] && emailModel.touched">Email is required.</div>
           <div class="invalid-feedback d-block" *ngIf="emailModel.errors?.['email'] && emailModel.touched">Enter a valid email address.</div>
-          <div class="form-text" *ngIf="emailModel.valid && emailModel.touched">Email format accepted. We will verify the account and password when you sign in.</div>
         </div>
+
         <div>
-          <label class="form-label" for="password">Password <span class="required">*</span></label>
+          <div class="d-flex align-items-center justify-content-between gap-3">
+            <label class="form-label" for="password">Password <span class="required">*</span></label>
+            <button class="btn btn-link login-link" type="button" (click)="togglePasswordVisibility()" [attr.aria-pressed]="showPassword">
+              {{ showPassword ? 'Hide' : 'Show' }} password
+            </button>
+          </div>
           <input
             id="password"
             class="form-control"
-            type="password"
+            [type]="showPassword ? 'text' : 'password'"
             name="password"
             [(ngModel)]="password"
             required
             autocomplete="current-password"
+            placeholder="Enter your password"
             #passwordModel="ngModel"
             [class.is-invalid]="passwordModel.invalid && passwordModel.touched">
           <div class="invalid-feedback d-block" *ngIf="passwordModel.errors?.['required'] && passwordModel.touched">Password is required.</div>
         </div>
-        <button class="btn btn-primary btn-lg" [disabled]="loginForm.invalid || loading">{{ loading ? 'Signing in...' : 'Sign in' }}</button>
+
+        <button class="btn btn-primary btn-lg login-submit" [disabled]="!canSubmit">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          {{ loading ? 'Signing in...' : 'Sign in' }}
+        </button>
       </form>
 
       <div class="demo-credentials mt-4">
-        <strong>Demo accounts</strong>
-        <p class="mb-3 small">Use one of these to try the app without typing credentials.</p>
-        <div class="d-grid gap-2">
-          <button *ngFor="let account of demoAccounts" class="btn btn-outline-primary" type="button" (click)="useDemo(account, loginForm)">
-            {{ account.label }} · {{ account.email }}
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <strong>Demo accounts</strong>
+            <p class="mb-0 small">Pick a role to fill in credentials instantly.</p>
+          </div>
+          <span class="status-pill status-pill-new">Optional</span>
+        </div>
+        <div class="demo-account-grid">
+          <button
+            *ngFor="let account of demoAccounts"
+            class="demo-account"
+            [class.active]="selectedDemoEmail === account.email"
+            type="button"
+            (click)="useDemo(account, loginForm)">
+            <span class="demo-role">{{ account.role }}</span>
+            <strong>{{ account.label }}</strong>
+            <small>{{ account.description }}</small>
+            <code>{{ account.email }}</code>
           </button>
         </div>
       </div>
