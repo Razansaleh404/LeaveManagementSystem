@@ -63,6 +63,25 @@ render.yaml
 - `ManagerComments` optional, max 500
 - `CreatedDate`
 
+
+## Authentication and Demo Login
+
+The API uses ASP.NET Core JWT bearer authentication with HS256 signing. The JWT configuration lives under `JwtSettings`:
+
+```json
+"JwtSettings": {
+  "Key": "DevelopmentOnlySecretKeyForLeaveManagementJwtAuth12345",
+  "Issuer": "LeaveManagement.API",
+  "Audience": "LeaveManagement.Angular",
+  "DurationInMinutes": 120
+}
+```
+
+For production, override `JwtSettings__Key` with a long secret value instead of relying on the development key. Demo users are seeded automatically when the API can connect to the database:
+
+- Manager: `manager@leave.local` / `Password123!`
+- Employee: `employee@leave.local` / `Password123!`
+
 ## Install SQL Server Locally
 
 1. Install SQL Server Developer, Express, LocalDB, or use an available company SQL Server instance.
@@ -193,6 +212,7 @@ If you do not want to use EF Core migrations, run `database/create_tables.sql` a
    - Build command: `dotnet publish -c Release -o out`
    - Start command: `dotnet out/LeaveManagement.API.dll`
    - `ConnectionStrings__DefaultConnection` set manually to your SQL Server connection string
+   - `JwtSettings__Key` set manually to a long production JWT signing key
    - `ASPNETCORE_ENVIRONMENT=Production`
    - `FRONTEND_URL` set to the frontend URL
 5. The frontend service uses:
@@ -213,8 +233,9 @@ apiUrl: 'https://YOUR-ACTUAL-BACKEND.onrender.com/api'
 2. Commit and push the frontend change.
 3. Redeploy the frontend static site.
 4. Set the backend `ConnectionStrings__DefaultConnection` environment variable to your SQL Server connection string.
-5. Update the backend `FRONTEND_URL` environment variable if your frontend URL is different from the placeholder in `render.yaml`.
-6. Redeploy the backend after changing environment variables.
+5. Set `JwtSettings__Key` to a long production JWT signing key.
+6. Update the backend `FRONTEND_URL` environment variable if your frontend URL is different from the placeholder in `render.yaml`.
+7. Redeploy the backend after changing environment variables.
 
 ## Notes
 

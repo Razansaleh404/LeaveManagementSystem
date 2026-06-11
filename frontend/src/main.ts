@@ -15,7 +15,7 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
   { path: 'employees', component: EmployeeManagementComponent, canActivate: [authGuard, roleGuard(['Manager'])] },
   { path: 'request-leave', component: LeaveRequestComponent, canActivate: [authGuard, roleGuard(['Employee'])] },
-  { path: 'history', component: RequestHistoryComponent, canActivate: [authGuard, roleGuard(['Employee', 'Manager'])] },
+  { path: 'history', component: RequestHistoryComponent, canActivate: [authGuard, roleGuard(['Employee'])] },
   { path: 'manager', component: ManagerModuleComponent, canActivate: [authGuard, roleGuard(['Manager'])] },
   { path: '**', redirectTo: 'login' }
 ];

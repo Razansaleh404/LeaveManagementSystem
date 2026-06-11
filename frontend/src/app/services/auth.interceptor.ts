@@ -1,7 +1,9 @@
+import { inject } from '@angular/core';
 import { HttpInterceptorFn } from '@angular/common/http';
+import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const token = localStorage.getItem('leave-management-token');
+  const token = inject(AuthService).token;
   if (!token) {
     return next(request);
   }

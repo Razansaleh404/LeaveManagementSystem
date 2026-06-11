@@ -16,7 +16,7 @@ public class LeaveRequestCreateDto
     [Required]
     public DateOnly ToDate { get; set; }
 
-    [Required, MaxLength(500)]
+    [Required(AllowEmptyStrings = false), MinLength(1), MaxLength(500)]
     public string Reason { get; set; } = string.Empty;
 }
 

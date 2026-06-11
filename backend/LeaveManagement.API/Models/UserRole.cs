@@ -7,6 +7,16 @@ public static class UserRole
 
     public static bool IsValid(string? role)
     {
-        return role is Employee or Manager;
+        return Normalize(role) is not null;
+    }
+
+    public static string? Normalize(string? role)
+    {
+        return role?.Trim().ToLowerInvariant() switch
+        {
+            "employee" => Employee,
+            "manager" => Manager,
+            _ => null
+        };
     }
 }
