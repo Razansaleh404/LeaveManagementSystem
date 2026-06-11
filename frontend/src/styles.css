@@ -538,3 +538,57 @@ textarea { min-height: 90px; }
   .status-tabs { grid-template-columns: 1fr; }
   .request-card-main { flex-direction: column; }
 }
+
+.requesting-as {
+  background: #ffffff;
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: 0 0.75rem 1.75rem rgba(15, 23, 42, 0.06);
+  display: grid;
+  min-width: min(100%, 320px);
+  padding: 0.9rem 1rem;
+}
+
+.requesting-as span,
+.summary-row span {
+  color: var(--app-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.requesting-as strong,
+.summary-row strong {
+  color: #111827;
+  font-weight: 800;
+}
+
+.requesting-as small { color: var(--app-muted); }
+
+.leave-summary {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.summary-row {
+  border-bottom: 1px solid var(--app-border);
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 0;
+}
+
+.summary-row:first-of-type { padding-top: 0; }
+
+.summary-callout {
+  background: #eef5ff;
+  border: 1px solid #d9e8ff;
+  border-radius: 1rem;
+  color: #344054;
+  padding: 1rem;
+}
+
+.summary-callout strong {
+  color: var(--app-blue-dark);
+  display: block;
+  margin-bottom: 0.35rem;
+}

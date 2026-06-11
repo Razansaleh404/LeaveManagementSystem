@@ -1,17 +1,136 @@
-<div class="card"><div class="card-body">
-  <h3 class="card-title mb-3">Request Leave</h3>
-  <div class="alert alert-info" *ngIf="currentUser">Submitting as {{ currentUser.firstName }} {{ currentUser.lastName }} ({{ currentUser.email }}).</div>
-  <div *ngIf="message" class="alert alert-success">{{ message }}</div><div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <form (ngSubmit)="submit()" #requestForm="ngForm" class="row g-3">
-    <div class="col-md-6"><label class="form-label">Leave Type</label><select class="form-select" name="leaveTypeID" [(ngModel)]="form.leaveTypeID" required><option [ngValue]="0">Select leave type</option><option *ngFor="let t of leaveTypes" [ngValue]="t.leaveTypeID">{{ t.leaveName }}</option></select></div>
-    <div class="col-md-6"><label class="form-label">Number of Days</label><input class="form-control" [value]="numberOfDays" disabled></div>
-    <div class="col-md-6"><label class="form-label">From Date</label><input class="form-control" type="date" name="fromDate" [min]="today" [(ngModel)]="form.fromDate" (change)="calculateDays()" required></div>
-    <div class="col-md-6"><label class="form-label">To Date</label><input class="form-control" type="date" name="toDate" [min]="form.fromDate || today" [(ngModel)]="form.toDate" (change)="calculateDays()" required></div>
-    <div class="col-12">
-      <label class="form-label" for="reason">Reason <span class="required">*</span></label>
-      <textarea id="reason" class="form-control" name="reason" [(ngModel)]="form.reason" maxlength="500" required #reason="ngModel" [class.is-invalid]="(reason.invalid || isReasonMissing) && reason.touched"></textarea>
-      <div class="invalid-feedback d-block" *ngIf="(reason.invalid || isReasonMissing) && reason.touched">Reason is required.</div>
+<section class="page-header flex-column flex-lg-row align-items-start align-items-lg-center gap-3 mb-4">
+  <div>
+    <div class="eyebrow">Employee workspace</div>
+    <h1 class="page-title mb-1">Request Leave</h1>
+    <p class="page-subtitle mb-0">Choose your leave type, confirm the dates, and explain the request for manager review.</p>
+  </div>
+  <div class="requesting-as" *ngIf="currentUser">
+    <span>Submitting as</span>
+    <strong>{{ currentUser.firstName }} {{ currentUser.lastName }}</strong>
+    <small>{{ currentUser.department }} · {{ currentUser.email }}</small>
+  </div>
+</section>
+
+<div class="row g-4 leave-request-layout">
+  <div class="col-lg-8">
+    <div class="card app-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+          <div>
+            <h2 class="section-title mb-1">Leave details</h2>
+            <p class="text-muted mb-0 small">Required fields are marked with an asterisk.</p>
+          </div>
+          <span class="status-pill status-pill-new">Draft</span>
+        </div>
+
+        <div *ngIf="message" class="alert app-alert alert-success" role="status">{{ message }}</div>
+        <div *ngIf="error" class="alert app-alert alert-danger" role="alert">{{ error }}</div>
+
+        <form (ngSubmit)="submit(requestForm)" #requestForm="ngForm" class="row g-3" novalidate>
+          <div class="col-md-6">
+            <label class="form-label" for="leaveType">Leave Type <span class="required">*</span></label>
+            <select
+              id="leaveType"
+              class="form-select"
+              name="leaveTypeID"
+              [(ngModel)]="form.leaveTypeID"
+              required
+              #leaveTypeID="ngModel"
+              [class.is-invalid]="(leaveTypeID.invalid || form.leaveTypeID === 0) && leaveTypeID.touched">
+              <option [ngValue]="0">Select leave type</option>
+              <option *ngFor="let t of leaveTypes" [ngValue]="t.leaveTypeID">{{ t.leaveName }}</option>
+            </select>
+            <div class="invalid-feedback d-block" *ngIf="(leaveTypeID.invalid || form.leaveTypeID === 0) && leaveTypeID.touched">Leave type is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="numberOfDays">Number of Days</label>
+            <input id="numberOfDays" class="form-control" [value]="numberOfDays || 'Select dates to calculate'" disabled>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="fromDate">From Date <span class="required">*</span></label>
+            <input
+              id="fromDate"
+              class="form-control"
+              type="date"
+              name="fromDate"
+              [min]="today"
+              [(ngModel)]="form.fromDate"
+              (ngModelChange)="calculateDays()"
+              required
+              #fromDate="ngModel"
+              [class.is-invalid]="fromDate.invalid && fromDate.touched">
+            <div class="invalid-feedback d-block" *ngIf="fromDate.invalid && fromDate.touched">Start date is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="toDate">To Date <span class="required">*</span></label>
+            <input
+              id="toDate"
+              class="form-control"
+              type="date"
+              name="toDate"
+              [min]="form.fromDate || today"
+              [(ngModel)]="form.toDate"
+              (ngModelChange)="calculateDays()"
+              required
+              #toDate="ngModel"
+              [class.is-invalid]="(toDate.invalid || isDateRangeInvalid) && toDate.touched">
+            <div class="invalid-feedback d-block" *ngIf="toDate.invalid && toDate.touched">End date is required.</div>
+            <div class="invalid-feedback d-block" *ngIf="isDateRangeInvalid && toDate.touched">End date must be on or after the start date.</div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="reason">Reason <span class="required">*</span></label>
+            <textarea
+              id="reason"
+              class="form-control"
+              name="reason"
+              [(ngModel)]="form.reason"
+              maxlength="500"
+              required
+              placeholder="Briefly describe why you need this leave."
+              #reason="ngModel"
+              [class.is-invalid]="(reason.invalid || isReasonMissing) && reason.touched"></textarea>
+            <div class="d-flex justify-content-between gap-3">
+              <div class="invalid-feedback d-block" *ngIf="(reason.invalid || isReasonMissing) && reason.touched">Reason is required.</div>
+              <div class="form-text ms-auto">{{ form.reason.length }}/500</div>
+            </div>
+          </div>
+
+          <div class="col-12 d-flex flex-column flex-sm-row gap-2 justify-content-sm-end mt-4">
+            <button type="button" class="btn btn-outline-secondary btn-action" (click)="reset(requestForm)" [disabled]="loading">Clear</button>
+            <button class="btn btn-primary btn-action" [disabled]="requestForm.invalid || form.leaveTypeID === 0 || isReasonMissing || isDateRangeInvalid || loading">
+              {{ loading ? 'Submitting...' : 'Submit Request' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="col-12"><button class="btn btn-primary" [disabled]="requestForm.invalid || form.leaveTypeID === 0 || isReasonMissing || loading">{{ loading ? 'Submitting...' : 'Submit Request' }}</button></div>
-  </form>
-</div></div>
+  </div>
+
+  <div class="col-lg-4">
+    <aside class="card app-card leave-summary h-100">
+      <div class="card-body p-4">
+        <h2 class="section-title mb-3">Request summary</h2>
+        <div class="summary-row">
+          <span>Leave type</span>
+          <strong>{{ selectedLeaveTypeName }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Dates</span>
+          <strong>{{ dateSummary }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Duration</span>
+          <strong>{{ numberOfDays || 0 }} day{{ numberOfDays === 1 ? '' : 's' }}</strong>
+        </div>
+        <div class="summary-callout mt-4">
+          <strong>What happens next?</strong>
+          <p class="mb-0">Your manager will see this as a pending request and can approve or reject it with comments.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>

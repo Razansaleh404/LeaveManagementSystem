@@ -7,11 +7,11 @@ import { LeaveRequestComponent } from './app/components/leave-request/leave-requ
 import { RequestHistoryComponent } from './app/components/request-history/request-history.component';
 import { ManagerModuleComponent } from './app/components/manager-module/manager-module.component';
 import { LoginComponent } from './app/components/login/login.component';
-import { authGuard, loginGuard, roleGuard } from './app/services/auth.guard';
+import { authGuard, loginGuard, roleGuard, roleHomeGuard } from './app/services/auth.guard';
 import { authInterceptor } from './app/services/auth.interceptor';
 
 const routes: Routes = [
-  { path: '', canActivate: [authGuard], children: [{ path: '', redirectTo: 'request-leave', pathMatch: 'full' }] },
+  { path: '', pathMatch: 'full', canActivate: [roleHomeGuard], component: LoginComponent },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
   { path: 'employees', component: EmployeeManagementComponent, canActivate: [authGuard, roleGuard(['Manager'])] },
   { path: 'request-leave', component: LeaveRequestComponent, canActivate: [authGuard, roleGuard(['Employee'])] },
