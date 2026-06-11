@@ -7,6 +7,7 @@ import { EmployeeService } from '../../services/employee.service';
 @Component({ selector: 'app-employee-management', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './employee-management.component.html' })
 export class EmployeeManagementComponent implements OnInit {
   employees: Employee[] = [];
+  private allEmployees: Employee[] = [];
   form: Employee = this.emptyEmployee();
   searchTerm = '';
   loading = false;
@@ -18,10 +19,20 @@ export class EmployeeManagementComponent implements OnInit {
 
   ngOnInit(): void { this.loadEmployees(); }
 
+  get isEmailInUse(): boolean {
+    const email = this.form.email.trim().toLowerCase();
+    if (!email) return false;
+    return this.allEmployees.some(employee => employee.email.toLowerCase() === email && employee.employeeID !== this.form.employeeID);
+  }
+
+  get isEmailAccepted(): boolean {
+    return !!this.form.email.trim() && this.isEmailFormatValid(this.form.email) && !this.isEmailInUse;
+  }
+
   loadEmployees(): void {
     this.loading = true;
     this.employeeService.getAll().subscribe({
-      next: data => { this.employees = data; this.loading = false; },
+      next: data => { this.allEmployees = data; this.employees = data; this.loading = false; },
       error: err => this.showError(err, 'Could not load employees.')
     });
   }
@@ -39,8 +50,11 @@ export class EmployeeManagementComponent implements OnInit {
     this.message = '';
     this.error = '';
 
-    if (employeeForm.invalid) {
+    if (employeeForm.invalid || this.isEmailInUse) {
       employeeForm.control.markAllAsTouched();
+      if (this.isEmailInUse) {
+        this.error = 'Email already exists. Use a different email address.';
+      }
       return;
     }
 
@@ -104,5 +118,6 @@ export class EmployeeManagementComponent implements OnInit {
   }
 
   private emptyEmployee(): Employee { return { employeeID: 0, firstName: '', lastName: '', email: '', department: '', role: 'Employee', password: '', isActive: true }; }
+  private isEmailFormatValid(email: string): boolean { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()); }
   private showError(err: any, fallback: string): void { this.error = err?.error?.message ?? fallback; this.loading = false; this.saving = false; }
 }

@@ -1,11 +1,13 @@
+using System.Text;
 using LeaveManagement.API.Authentication;
 using LeaveManagement.API.Data;
 using LeaveManagement.API.Models;
 using LeaveManagement.API.Middleware;
 using LeaveManagement.API.Services;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,16 +20,44 @@ if (!string.IsNullOrWhiteSpace(port))
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
-        options.InvalidModelStateResponseFactory = _ => new BadRequestObjectResult(new { message = "Invalid employee data." });
+        options.InvalidModelStateResponseFactory = _ => new BadRequestObjectResult(new { message = "Invalid request data." });
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddScoped<LeaveRequestValidator>();
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<JwtTokenService>();
-builder.Services.AddAuthentication("Jwt")
-    .AddScheme<AuthenticationSchemeOptions, JwtAuthenticationHandler>("Jwt", _ => { });
+
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JwtSettings is not configured.");
+if (string.IsNullOrWhiteSpace(jwtSettings.Key) || Encoding.UTF8.GetByteCount(jwtSettings.Key) < 32)
+{
+    throw new InvalidOperationException("JwtSettings:Key must be configured with at least 32 bytes for HS256 signing.");
+}
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = "nameid",
+        RoleClaimType = "role"
+    };
+});
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("EmployeeOnly", policy => policy.RequireRole(UserRole.Employee));
@@ -41,13 +71,23 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<LeaveManagementDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-var allowedOrigins = new[] { "http://localhost:4200" };
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+if (!string.IsNullOrWhiteSpace(frontendUrl))
+{
+    allowedOrigins = [.. allowedOrigins, frontendUrl.TrimEnd('/')];
+}
+
+if (allowedOrigins.Length == 0)
+{
+    allowedOrigins = ["http://localhost:4200"];
+}
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularCors", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.WithOrigins(allowedOrigins.Distinct(StringComparer.OrdinalIgnoreCase).ToArray())
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

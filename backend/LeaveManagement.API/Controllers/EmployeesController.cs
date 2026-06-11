@@ -58,7 +58,7 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             LastName = request.LastName.Trim(),
             Email = request.Email.Trim(),
             Department = request.Department.Trim(),
-            Role = request.Role,
+            Role = UserRole.Normalize(request.Role)!,
             IsActive = request.IsActive
         };
 
@@ -105,7 +105,7 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
         employee.LastName = request.LastName.Trim();
         employee.Email = request.Email.Trim();
         employee.Department = request.Department.Trim();
-        employee.Role = request.Role;
+        employee.Role = UserRole.Normalize(request.Role)!;
         employee.IsActive = request.IsActive;
         if (!string.IsNullOrWhiteSpace(request.Password))
         {

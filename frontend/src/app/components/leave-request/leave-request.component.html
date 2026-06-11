@@ -7,7 +7,11 @@
     <div class="col-md-6"><label class="form-label">Number of Days</label><input class="form-control" [value]="numberOfDays" disabled></div>
     <div class="col-md-6"><label class="form-label">From Date</label><input class="form-control" type="date" name="fromDate" [min]="today" [(ngModel)]="form.fromDate" (change)="calculateDays()" required></div>
     <div class="col-md-6"><label class="form-label">To Date</label><input class="form-control" type="date" name="toDate" [min]="form.fromDate || today" [(ngModel)]="form.toDate" (change)="calculateDays()" required></div>
-    <div class="col-12"><label class="form-label">Reason</label><textarea class="form-control" name="reason" [(ngModel)]="form.reason" maxlength="500" required></textarea></div>
-    <div class="col-12"><button class="btn btn-primary" [disabled]="requestForm.invalid || form.leaveTypeID === 0 || loading">{{ loading ? 'Submitting...' : 'Submit Request' }}</button></div>
+    <div class="col-12">
+      <label class="form-label" for="reason">Reason <span class="required">*</span></label>
+      <textarea id="reason" class="form-control" name="reason" [(ngModel)]="form.reason" maxlength="500" required #reason="ngModel" [class.is-invalid]="(reason.invalid || isReasonMissing) && reason.touched"></textarea>
+      <div class="invalid-feedback d-block" *ngIf="(reason.invalid || isReasonMissing) && reason.touched">Reason is required.</div>
+    </div>
+    <div class="col-12"><button class="btn btn-primary" [disabled]="requestForm.invalid || form.leaveTypeID === 0 || isReasonMissing || loading">{{ loading ? 'Submitting...' : 'Submit Request' }}</button></div>
   </form>
 </div></div>

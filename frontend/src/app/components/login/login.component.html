@@ -5,27 +5,54 @@
         <span class="brand-mark mx-auto mb-3">L</span>
         <p class="eyebrow mb-1">Secure sign in</p>
         <h1 class="page-title mb-2">Leave Management</h1>
-        <p class="page-subtitle mb-0">Use your employee or manager account to continue.</p>
+        <p class="page-subtitle mb-0">Sign in with an active employee or manager account.</p>
       </div>
 
-      <div *ngIf="error" class="alert alert-danger app-alert">{{ error }}</div>
+      <div *ngIf="error" class="alert alert-danger app-alert" role="alert">{{ error }}</div>
 
-      <form (ngSubmit)="login()" #loginForm="ngForm" class="d-grid gap-3">
+      <form (ngSubmit)="login(loginForm)" #loginForm="ngForm" class="d-grid gap-3" novalidate>
         <div>
-          <label class="form-label" for="email">Email</label>
-          <input id="email" class="form-control" type="email" name="email" [(ngModel)]="email" required email autocomplete="username">
+          <label class="form-label" for="email">Email <span class="required">*</span></label>
+          <input
+            id="email"
+            class="form-control"
+            type="email"
+            name="email"
+            [(ngModel)]="email"
+            required
+            email
+            autocomplete="username"
+            #emailModel="ngModel"
+            [class.is-invalid]="emailModel.invalid && emailModel.touched">
+          <div class="invalid-feedback d-block" *ngIf="emailModel.errors?.['required'] && emailModel.touched">Email is required.</div>
+          <div class="invalid-feedback d-block" *ngIf="emailModel.errors?.['email'] && emailModel.touched">Enter a valid email address.</div>
+          <div class="form-text" *ngIf="emailModel.valid && emailModel.touched">Email format accepted. We will verify the account and password when you sign in.</div>
         </div>
         <div>
-          <label class="form-label" for="password">Password</label>
-          <input id="password" class="form-control" type="password" name="password" [(ngModel)]="password" required autocomplete="current-password">
+          <label class="form-label" for="password">Password <span class="required">*</span></label>
+          <input
+            id="password"
+            class="form-control"
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            required
+            autocomplete="current-password"
+            #passwordModel="ngModel"
+            [class.is-invalid]="passwordModel.invalid && passwordModel.touched">
+          <div class="invalid-feedback d-block" *ngIf="passwordModel.errors?.['required'] && passwordModel.touched">Password is required.</div>
         </div>
         <button class="btn btn-primary btn-lg" [disabled]="loginForm.invalid || loading">{{ loading ? 'Signing in...' : 'Sign in' }}</button>
       </form>
 
       <div class="demo-credentials mt-4">
         <strong>Demo accounts</strong>
-        <div>Employee: employee@leave.local / Password123!</div>
-        <div>Manager: manager@leave.local / Password123!</div>
+        <p class="mb-3 small">Use one of these to try the app without typing credentials.</p>
+        <div class="d-grid gap-2">
+          <button *ngFor="let account of demoAccounts" class="btn btn-outline-primary" type="button" (click)="useDemo(account, loginForm)">
+            {{ account.label }} · {{ account.email }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
