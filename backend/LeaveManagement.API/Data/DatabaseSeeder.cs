@@ -18,6 +18,7 @@ public static class DatabaseSeeder
         }
 
         await EnsureAuthenticationColumnsAsync(context);
+        await EnsureExistingEmployeesCanSignInAsync(context, passwordService);
 
         await EnsureUserAsync(context, passwordService, "manager@leave.local", "Mia", "Manager", "Operations", UserRole.Manager);
         await EnsureUserAsync(context, passwordService, "employee@leave.local", "Evan", "Employee", "Engineering", UserRole.Employee);
@@ -51,11 +52,54 @@ public static class DatabaseSeeder
             """
             IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
                 AND COL_LENGTH(N'dbo.Employees', N'Role') IS NOT NULL
-                AND NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
             BEGIN
-                ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager'));
+                UPDATE dbo.Employees
+                SET [Role] = CASE
+                    WHEN LOWER(LTRIM(RTRIM([Role]))) = N'manager' THEN N'Manager'
+                    ELSE N'Employee'
+                END;
+
+                IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
+                    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager'));
             END
             """);
+    }
+
+
+    private static async Task EnsureExistingEmployeesCanSignInAsync(
+        LeaveManagementDbContext context,
+        PasswordService passwordService)
+    {
+        var employees = await context.Employees.ToListAsync();
+        foreach (var employee in employees)
+        {
+            var changed = false;
+
+            var normalizedRole = UserRole.Normalize(employee.Role);
+            if (normalizedRole is null)
+            {
+                employee.Role = UserRole.Employee;
+                changed = true;
+            }
+            else if (employee.Role != normalizedRole)
+            {
+                employee.Role = normalizedRole;
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(employee.PasswordHash) || string.IsNullOrWhiteSpace(employee.PasswordSalt))
+            {
+                var password = passwordService.HashPassword("Password123!");
+                employee.PasswordHash = password.Hash;
+                employee.PasswordSalt = password.Salt;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                context.Employees.Update(employee);
+            }
+        }
     }
 
     private static async Task EnsureUserAsync(
@@ -67,7 +111,8 @@ public static class DatabaseSeeder
         string department,
         string role)
     {
-        var user = await context.Employees.FirstOrDefaultAsync(e => e.Email == email);
+        var normalizedEmail = email.Trim().ToLower();
+        var user = await context.Employees.FirstOrDefaultAsync(e => e.Email.ToLower() == normalizedEmail);
         if (user is null)
         {
             var password = passwordService.HashPassword("Password123!");
@@ -97,6 +142,12 @@ public static class DatabaseSeeder
         if (user.Role != role)
         {
             user.Role = role;
+            changed = true;
+        }
+
+        if (!user.IsActive)
+        {
+            user.IsActive = true;
             changed = true;
         }
 

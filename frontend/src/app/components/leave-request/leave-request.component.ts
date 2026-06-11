@@ -19,6 +19,7 @@ export class LeaveRequestComponent implements OnInit {
   ngOnInit(): void { this.form.employeeID = this.auth.currentUser?.employeeID ?? 0; this.leaveTypesApi.getAll().subscribe(data => this.leaveTypes = data); }
   get today(): string { return new Date().toISOString().slice(0, 10); }
   get currentUser() { return this.auth.currentUser; }
+  get isReasonMissing(): boolean { return !this.form.reason.trim(); }
 
   calculateDays(): void {
     if (!this.form.fromDate || !this.form.toDate || this.form.toDate < this.form.fromDate) { this.numberOfDays = 0; return; }
@@ -40,7 +41,8 @@ export class LeaveRequestComponent implements OnInit {
     const validation = this.validationError();
     if (validation) { this.error = validation; return; }
     this.loading = true; this.error = ''; this.message = '';
-    this.requestsApi.create(this.form).subscribe({
+    const request = { ...this.form, reason: this.form.reason.trim() };
+    this.requestsApi.create(request).subscribe({
       next: () => { this.message = 'Leave request submitted successfully.'; this.form = { employeeID: this.auth.currentUser?.employeeID ?? 0, leaveTypeID: 0, fromDate: '', toDate: '', reason: '' }; this.numberOfDays = 0; this.loading = false; },
       error: err => { this.error = err?.error?.message ?? 'Could not submit request.'; this.loading = false; }
     });
