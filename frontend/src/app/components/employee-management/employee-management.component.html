@@ -38,9 +38,11 @@
 
           <div class="mb-3">
             <label class="form-label" for="email">Email <span class="required">*</span></label>
-            <input class="form-control" id="email" type="email" name="email" [(ngModel)]="form.email" maxlength="100" required email #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
+            <input class="form-control" id="email" type="email" name="email" [(ngModel)]="form.email" maxlength="100" required email #email="ngModel" [class.is-invalid]="(email.invalid || isEmailInUse) && email.touched">
             <div class="invalid-feedback d-block" *ngIf="email.errors?.['required'] && email.touched">Email is required.</div>
             <div class="invalid-feedback d-block" *ngIf="email.errors?.['email'] && email.touched">Enter a valid email address.</div>
+            <div class="invalid-feedback d-block" *ngIf="isEmailInUse && email.touched">Email already exists. Use a different email address.</div>
+            <div class="valid-feedback d-block" *ngIf="isEmailAccepted && email.touched">Email accepted.</div>
           </div>
 
           <div class="mb-3">
@@ -71,7 +73,7 @@
           </div>
 
           <div class="d-grid d-sm-flex gap-2">
-            <button class="btn btn-primary btn-action" [disabled]="employeeForm.invalid || saving">
+            <button class="btn btn-primary btn-action" [disabled]="employeeForm.invalid || isEmailInUse || saving">
               {{ saving ? 'Saving...' : 'Save Employee' }}
             </button>
             <button type="button" class="btn btn-outline-secondary btn-action" (click)="resetForm(employeeForm)">Clear</button>
