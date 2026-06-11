@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Text;
 using LeaveManagement.API.Authentication;
 using LeaveManagement.API.Data;
@@ -44,6 +43,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.MapInboundClaims = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -54,8 +54,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings.Audience,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
-        NameClaimType = ClaimTypes.NameIdentifier,
-        RoleClaimType = ClaimTypes.Role
+        NameClaimType = "nameid",
+        RoleClaimType = "role"
     };
 });
 builder.Services.AddAuthorization(options =>

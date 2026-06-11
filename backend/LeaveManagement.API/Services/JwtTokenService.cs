@@ -15,17 +15,18 @@ public class JwtTokenService(IOptions<JwtSettings> options)
     public (string Token, DateTime ExpiresAt) CreateToken(Employee employee)
     {
         var expiresAt = DateTime.UtcNow.AddMinutes(settings.DurationInMinutes);
+        var employeeId = employee.EmployeeID.ToString();
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, employee.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Email, employee.Email),
-            new Claim("uid", employee.EmployeeID.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, employee.EmployeeID.ToString()),
-            new Claim(ClaimTypes.Name, employee.Email),
-            new Claim(ClaimTypes.GivenName, employee.FirstName),
-            new Claim(ClaimTypes.Surname, employee.LastName),
-            new Claim(ClaimTypes.Role, employee.Role)
+            new Claim("uid", employeeId),
+            new Claim("nameid", employeeId),
+            new Claim("unique_name", employee.Email),
+            new Claim("given_name", employee.FirstName),
+            new Claim("family_name", employee.LastName),
+            new Claim("role", employee.Role)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Key));
