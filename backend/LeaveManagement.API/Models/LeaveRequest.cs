@@ -1,7 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace LeaveManagement.API.Models;
+using System.Text.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;      // Required, MaxLength, IValidatableObject
+using System.ComponentModel.DataAnnotations.Schema; // Column
+using LeaveManagement.API.Models;
 
 public class LeaveRequest : IValidatableObject
 {
@@ -32,24 +34,20 @@ public class LeaveRequest : IValidatableObject
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
+    [JsonIgnore]  // ← Add this to stop the JSON cycle
     public Employee Employee { get; set; } = null!;
+
     public LeaveType LeaveType { get; set; } = null!;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (ToDate < FromDate)
-        {
-            yield return new ValidationResult("ToDate must be greater than or equal to FromDate.", [nameof(ToDate)]);
-        }
+            yield return new ValidationResult("ToDate must be greater than or equal to FromDate.", new[] { nameof(ToDate) });
 
         if (FromDate < DateOnly.FromDateTime(DateTime.UtcNow.Date) || ToDate < DateOnly.FromDateTime(DateTime.UtcNow.Date))
-        {
-            yield return new ValidationResult("Leave dates cannot be in the past.", [nameof(FromDate), nameof(ToDate)]);
-        }
+            yield return new ValidationResult("Leave dates cannot be in the past.", new[] { nameof(FromDate), nameof(ToDate) });
 
         if (!LeaveStatus.IsValid(Status))
-        {
-            yield return new ValidationResult("Status must be Pending, Approved, or Rejected.", [nameof(Status)]);
-        }
+            yield return new ValidationResult("Status must be Pending, Approved, or Rejected.", new[] { nameof(Status) });
     }
 }

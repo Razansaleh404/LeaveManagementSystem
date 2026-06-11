@@ -32,5 +32,6 @@ public class Employee
 
     public bool IsActive { get; set; } = true;
 
-    public ICollection<LeaveRequest> LeaveRequests { get; set; } = [];
+    [JsonIgnore]
+public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
 }

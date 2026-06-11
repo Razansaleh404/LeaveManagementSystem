@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace LeaveManagement.API.Models;
 
@@ -9,5 +10,6 @@ public class LeaveType
     [Required, MaxLength(50)]
     public string LeaveName { get; set; } = string.Empty;
 
+    [JsonIgnore]
     public ICollection<LeaveRequest> LeaveRequests { get; set; } = [];
 }
