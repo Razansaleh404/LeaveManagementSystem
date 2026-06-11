@@ -3,8 +3,8 @@ using LeaveManagement.API.DTOs;
 using LeaveManagement.API.Models;
 using LeaveManagement.API.Services;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 
 namespace LeaveManagement.API.Controllers;
@@ -73,11 +73,12 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     public async Task<ActionResult<LeaveRequest>> CreateLeaveRequest(LeaveRequestCreateDto dto)
     {
         var currentEmployeeId = GetCurrentEmployeeId();
-        if (currentEmployeeId is null || dto.EmployeeID != currentEmployeeId.Value)
+        if (currentEmployeeId is null)
         {
-            return Forbid();
+            return Unauthorized(new { message = "Could not determine the signed-in employee." });
         }
 
+        dto.EmployeeID = currentEmployeeId.Value;
         var errors = await validator.ValidateCreateAsync(dto);
         if (errors.Count > 0)
         {
@@ -189,7 +190,10 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
 
     private int? GetCurrentEmployeeId()
     {
-        var employeeId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var employeeId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("uid")
+            ?? User.FindFirstValue("nameid");
+
         return int.TryParse(employeeId, out var id) ? id : null;
     }
 
