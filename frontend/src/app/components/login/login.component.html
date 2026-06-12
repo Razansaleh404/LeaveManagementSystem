@@ -24,7 +24,7 @@
       <div class="mb-4">
         <p class="eyebrow mb-1">Secure sign in</p>
         <h2 class="page-title mb-2">Welcome back</h2>
-        <p class="page-subtitle mb-0">Use your active employee or manager account to continue.</p>
+        <p class="page-subtitle mb-0">Use your active employee, manager, or admin account to continue.</p>
       </div>
 
       <div *ngIf="error" class="alert alert-danger app-alert" role="alert">{{ error }}</div>
@@ -75,6 +75,11 @@
           {{ loading ? 'Signing in...' : 'Sign in' }}
         </button>
       </form>
+
+      <div class="text-center mt-4">
+        <span class="text-muted">Need an employee account?</span>
+        <a class="ms-1" routerLink="/signup">Sign up</a>
+      </div>
 
       <div class="demo-credentials mt-4">
         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">

@@ -19,7 +19,7 @@ import { AuthService } from './services/auth.service';
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
           <ul class="navbar-nav ms-auto gap-lg-1 align-items-lg-center">
-            <li class="nav-item" *ngIf="user.role === 'Manager'"><a class="nav-link" routerLink="/employees" routerLinkActive="active">Employees</a></li>
+            <li class="nav-item" *ngIf="user.role === 'Admin'"><a class="nav-link" routerLink="/admin" routerLinkActive="active">Admin</a></li>
             <li class="nav-item" *ngIf="user.role === 'Employee'"><a class="nav-link" routerLink="/request-leave" routerLinkActive="active">Request Leave</a></li>
             <li class="nav-item" *ngIf="user.role === 'Employee'"><a class="nav-link" routerLink="/history" routerLinkActive="active">History</a></li>
             <li class="nav-item" *ngIf="user.role === 'Manager'"><a class="nav-link" routerLink="/manager" routerLinkActive="active">Manager</a></li>

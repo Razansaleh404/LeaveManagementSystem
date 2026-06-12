@@ -63,6 +63,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("EmployeeOnly", policy => policy.RequireRole(UserRole.Employee));
     options.AddPolicy("ManagerOnly", policy => policy.RequireRole(UserRole.Manager));
     options.AddPolicy("EmployeeOrManager", policy => policy.RequireRole(UserRole.Employee, UserRole.Manager));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole(UserRole.Admin));
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")

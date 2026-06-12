@@ -7,6 +7,7 @@ import { EmployeeService } from '../../services/employee.service';
 @Component({ selector: 'app-employee-management', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './employee-management.component.html' })
 export class EmployeeManagementComponent implements OnInit {
   employees: Employee[] = [];
+  managers: Employee[] = [];
   private allEmployees: Employee[] = [];
   form: Employee = this.emptyEmployee();
   searchTerm = '';
@@ -29,10 +30,12 @@ export class EmployeeManagementComponent implements OnInit {
     return !!this.form.email.trim() && this.isEmailFormatValid(this.form.email) && !this.isEmailInUse;
   }
 
+  get isManagerAssignmentMissing(): boolean { return this.form.role === 'Employee' && !this.form.managerID; }
+
   loadEmployees(): void {
     this.loading = true;
     this.employeeService.getAll().subscribe({
-      next: data => { this.allEmployees = data; this.employees = data; this.loading = false; },
+      next: data => { this.allEmployees = data; this.employees = data; this.managers = data.filter(employee => employee.role === 'Manager' && employee.isActive); this.loading = false; },
       error: err => this.showError(err, 'Could not load employees.')
     });
   }
@@ -50,10 +53,12 @@ export class EmployeeManagementComponent implements OnInit {
     this.message = '';
     this.error = '';
 
-    if (employeeForm.invalid || this.isEmailInUse) {
+    if (employeeForm.invalid || this.isEmailInUse || this.isManagerAssignmentMissing) {
       employeeForm.control.markAllAsTouched();
       if (this.isEmailInUse) {
         this.error = 'Email already exists. Use a different email address.';
+      } else if (this.isManagerAssignmentMissing) {
+        this.error = 'Assigned manager is required for employees.';
       }
       return;
     }
@@ -89,6 +94,12 @@ export class EmployeeManagementComponent implements OnInit {
     }
   }
 
+  managerName(employee: Employee): string {
+    if (employee.role !== 'Employee') return '—';
+    const manager = this.allEmployees.find(candidate => candidate.employeeID === employee.managerID);
+    return manager ? `${manager.firstName} ${manager.lastName}` : 'Unassigned';
+  }
+
   delete(employee: Employee): void {
     const confirmed = confirm(`Are you sure you want to delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`);
     if (!confirmed) return;
@@ -113,11 +124,12 @@ export class EmployeeManagementComponent implements OnInit {
       lastName: this.form.lastName.trim(),
       email: this.form.email.trim(),
       department: this.form.department.trim(),
-      password: this.form.password?.trim() || undefined
+      password: this.form.password?.trim() || undefined,
+      managerID: this.form.role === 'Employee' ? this.form.managerID : null
     };
   }
 
-  private emptyEmployee(): Employee { return { employeeID: 0, firstName: '', lastName: '', email: '', department: '', role: 'Employee', password: '', isActive: true }; }
+  private emptyEmployee(): Employee { return { employeeID: 0, firstName: '', lastName: '', email: '', department: '', role: 'Employee', password: '', isActive: true, managerID: null }; }
   private isEmailFormatValid(email: string): boolean { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()); }
   private showError(err: any, fallback: string): void { this.error = err?.error?.message ?? fallback; this.loading = false; this.saving = false; }
 }

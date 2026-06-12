@@ -4,6 +4,7 @@ public static class UserRole
 {
     public const string Employee = "Employee";
     public const string Manager = "Manager";
+    public const string Admin = "Admin";
 
     public static bool IsValid(string? role)
     {
@@ -16,6 +17,7 @@ public static class UserRole
         {
             "employee" => Employee,
             "manager" => Manager,
+            "admin" => Admin,
             _ => null
         };
     }

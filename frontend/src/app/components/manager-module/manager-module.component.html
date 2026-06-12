@@ -19,17 +19,13 @@
 
 <div class="card app-card request-board"><div class="card-body p-4">
   <div class="filter-panel mb-4">
-    <div class="status-tabs" role="group" aria-label="Filter manager requests by status">
-      <button
-        *ngFor="let filter of statusFilters"
-        type="button"
-        class="status-tab"
-        [class.active]="status === filter.label"
-        (click)="setStatus(filter.label)">
-        <span>{{ filter.label }}</span>
-        <small>{{ filter.helper }}</small>
-        <strong>{{ countFor(filter.label) }}</strong>
-      </button>
+    <div class="row g-3 align-items-end">
+      <div class="col-md-6 col-lg-4">
+        <label class="form-label" for="statusFilter">Request status</label>
+        <select id="statusFilter" class="form-select" [(ngModel)]="status" (ngModelChange)="applyFilters()" aria-label="Filter manager requests by status">
+          <option *ngFor="let filter of statusFilters" [ngValue]="filter.label">{{ filter.label }} ({{ countFor(filter.label) }}) — {{ filter.helper }}</option>
+        </select>
+      </div>
     </div>
 
     <div class="row g-3 align-items-end mt-1">

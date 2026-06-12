@@ -1,0 +1,71 @@
+<div class="login-shell login-shell-enhanced">
+  <div class="login-hero app-card">
+    <div class="login-hero-content">
+      <span class="brand-mark mb-4">L</span>
+      <p class="eyebrow mb-2">Employee sign up</p>
+      <h1 class="login-hero-title">Create your account and get JWT access immediately.</h1>
+      <p class="login-hero-copy mb-4">Choose your assigned manager during sign up so every leave request is routed directly to the right approval queue.</p>
+    </div>
+  </div>
+
+  <div class="card login-card">
+    <div class="card-body p-4 p-lg-5">
+      <div class="mb-4">
+        <p class="eyebrow mb-1">Secure registration</p>
+        <h2 class="page-title mb-2">Sign up</h2>
+        <p class="page-subtitle mb-0">Already have an account? <a routerLink="/login">Sign in</a>.</p>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger app-alert" role="alert">{{ error }}</div>
+      <div *ngIf="managers.length === 0 && !error" class="alert alert-warning app-alert" role="alert">No managers are available for assignment yet.</div>
+
+      <form (ngSubmit)="signup(signupForm)" #signupForm="ngForm" class="row g-3" novalidate>
+        <div class="col-md-6">
+          <label class="form-label" for="firstName">First Name <span class="required">*</span></label>
+          <input class="form-control" id="firstName" name="firstName" [(ngModel)]="form.firstName" maxlength="50" required #firstName="ngModel" [class.is-invalid]="firstName.invalid && firstName.touched">
+          <div class="invalid-feedback d-block" *ngIf="firstName.invalid && firstName.touched">First name is required.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="lastName">Last Name <span class="required">*</span></label>
+          <input class="form-control" id="lastName" name="lastName" [(ngModel)]="form.lastName" maxlength="50" required #lastName="ngModel" [class.is-invalid]="lastName.invalid && lastName.touched">
+          <div class="invalid-feedback d-block" *ngIf="lastName.invalid && lastName.touched">Last name is required.</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="email">Email <span class="required">*</span></label>
+          <input class="form-control" id="email" type="email" name="email" [(ngModel)]="form.email" (blur)="normalizeEmail()" maxlength="100" required email autocomplete="username" #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
+          <div class="invalid-feedback d-block" *ngIf="email.errors?.['required'] && email.touched">Email is required.</div>
+          <div class="invalid-feedback d-block" *ngIf="email.errors?.['email'] && email.touched">Enter a valid email address.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="department">Department <span class="required">*</span></label>
+          <input class="form-control" id="department" name="department" [(ngModel)]="form.department" maxlength="50" required #department="ngModel" [class.is-invalid]="department.invalid && department.touched">
+          <div class="invalid-feedback d-block" *ngIf="department.invalid && department.touched">Department is required.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" for="managerID">Assigned Manager <span class="required">*</span></label>
+          <select class="form-select" id="managerID" name="managerID" [(ngModel)]="form.managerID" required #managerID="ngModel" [class.is-invalid]="(!form.managerID || managerID.invalid) && managerID.touched">
+            <option [ngValue]="0">Select your manager</option>
+            <option *ngFor="let manager of managers" [ngValue]="manager.employeeID">{{ manager.firstName }} {{ manager.lastName }} · {{ manager.department }}</option>
+          </select>
+          <div class="invalid-feedback d-block" *ngIf="(!form.managerID || managerID.invalid) && managerID.touched">Manager assignment is required.</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="password">Password <span class="required">*</span></label>
+          <input class="form-control" id="password" type="password" name="password" [(ngModel)]="form.password" minlength="8" required autocomplete="new-password" #password="ngModel" [class.is-invalid]="password.invalid && password.touched">
+          <div class="invalid-feedback d-block" *ngIf="password.errors?.['required'] && password.touched">Password is required.</div>
+          <div class="invalid-feedback d-block" *ngIf="password.errors?.['minlength'] && password.touched">Password must be at least 8 characters.</div>
+        </div>
+
+        <div class="col-12 d-grid gap-2 mt-4">
+          <button class="btn btn-primary btn-action" [disabled]="signupForm.invalid || !form.managerID || !canSubmit">{{ loading ? 'Creating account...' : 'Create account' }}</button>
+          <a class="btn btn-outline-secondary btn-action" routerLink="/login">Back to sign in</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

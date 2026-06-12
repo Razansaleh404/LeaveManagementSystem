@@ -32,6 +32,17 @@ public class Employee
 
     public bool IsActive { get; set; } = true;
 
+    public int? ManagerID { get; set; }
+
     [JsonIgnore]
-public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
+    public Employee? Manager { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Employee> DirectReports { get; set; } = new List<Employee>();
+
+    [JsonIgnore]
+    public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
+
+    [JsonIgnore]
+    public ICollection<LeaveRequest> AssignedLeaveRequests { get; set; } = new List<LeaveRequest>();
 }

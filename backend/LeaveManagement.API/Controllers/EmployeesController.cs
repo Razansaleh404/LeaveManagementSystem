@@ -11,7 +11,7 @@ namespace LeaveManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = UserRole.Manager)]
+[Authorize(Roles = UserRole.Admin)]
 public class EmployeesController(LeaveManagementDbContext context, ILogger<EmployeesController> logger, PasswordService passwordService) : ControllerBase
 {
     [HttpGet]
@@ -46,6 +46,12 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             return BadRequest(new { message = "Invalid employee data." });
         }
 
+        var managerValidation = await ValidateManagerAssignmentAsync(request);
+        if (managerValidation is not null)
+        {
+            return BadRequest(new { message = managerValidation });
+        }
+
         var normalizedEmail = request.Email.Trim().ToLower();
         if (await EmailExistsAsync(normalizedEmail))
         {
@@ -59,6 +65,7 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             Email = request.Email.Trim(),
             Department = request.Department.Trim(),
             Role = UserRole.Normalize(request.Role)!,
+            ManagerID = request.ManagerID,
             IsActive = request.IsActive
         };
 
@@ -89,6 +96,17 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             return BadRequest(new { message = "Invalid employee data." });
         }
 
+        if (request.ManagerID == id)
+        {
+            return BadRequest(new { message = "An employee cannot be assigned as their own manager." });
+        }
+
+        var managerValidation = await ValidateManagerAssignmentAsync(request);
+        if (managerValidation is not null)
+        {
+            return BadRequest(new { message = managerValidation });
+        }
+
         var employee = await context.Employees.FindAsync(id);
         if (employee is null)
         {
@@ -106,6 +124,7 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
         employee.Email = request.Email.Trim();
         employee.Department = request.Department.Trim();
         employee.Role = UserRole.Normalize(request.Role)!;
+        employee.ManagerID = request.ManagerID;
         employee.IsActive = request.IsActive;
         if (!string.IsNullOrWhiteSpace(request.Password))
         {
@@ -159,6 +178,28 @@ public class EmployeesController(LeaveManagementDbContext context, ILogger<Emplo
             && !string.IsNullOrWhiteSpace(request.Department)
             && UserRole.IsValid(request.Role)
             && new EmailAddressAttribute().IsValid(request.Email);
+    }
+
+    private async Task<string?> ValidateManagerAssignmentAsync(EmployeeCreateUpdateDto request)
+    {
+        var normalizedRole = UserRole.Normalize(request.Role);
+        if (normalizedRole == UserRole.Employee && request.ManagerID is null)
+        {
+            return "Employees must be assigned to a manager.";
+        }
+
+        if (normalizedRole != UserRole.Employee && request.ManagerID is not null)
+        {
+            return "Only employees can be assigned to a manager.";
+        }
+
+        if (request.ManagerID is null)
+        {
+            return null;
+        }
+
+        var managerExists = await context.Employees.AnyAsync(e => e.EmployeeID == request.ManagerID.Value && e.Role == UserRole.Manager && e.IsActive);
+        return managerExists ? null : "Assigned manager must be an active manager.";
     }
 
     private Task<bool> EmailExistsAsync(string normalizedEmail, int? excludeEmployeeId = null)
