@@ -53,6 +53,9 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
                 .HasMaxLength(50)
                 .HasColumnType("nvarchar(50)");
 
+            b.Property<int?>("ManagerID")
+                .HasColumnType("int");
+
             b.Property<string>("PasswordHash")
                 .IsRequired()
                 .HasColumnType("nvarchar(max)");
@@ -70,9 +73,10 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
 
             b.HasKey("EmployeeID");
             b.HasIndex("Email").IsUnique();
+            b.HasIndex("ManagerID");
             b.ToTable("Employees", t =>
             {
-                t.HasCheckConstraint("CK_Employees_Role", "[Role] IN ('Employee', 'Manager')");
+                t.HasCheckConstraint("CK_Employees_Role", "[Role] IN ('Employee', 'Manager', 'Admin')");
             });
         });
 
@@ -115,6 +119,7 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
             b.Property<int>("EmployeeID").HasColumnType("int");
             b.Property<DateOnly>("FromDate").HasColumnType("date");
             b.Property<int>("LeaveTypeID").HasColumnType("int");
+            b.Property<int>("ManagerID").HasColumnType("int");
             b.Property<string>("ManagerComments").HasMaxLength(500).HasColumnType("nvarchar(500)");
             b.Property<int>("NumberOfDays").HasColumnType("int");
             b.Property<string>("Reason").IsRequired().HasMaxLength(500).HasColumnType("nvarchar(500)");
@@ -124,11 +129,22 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
             b.HasKey("RequestID");
             b.HasIndex("EmployeeID");
             b.HasIndex("LeaveTypeID");
+            b.HasIndex("ManagerID");
             b.ToTable("LeaveRequests", t =>
             {
                 t.HasCheckConstraint("CK_LeaveRequests_DateRange", "[ToDate] >= [FromDate]");
                 t.HasCheckConstraint("CK_LeaveRequests_Status", "[Status] IN ('Pending', 'Approved', 'Rejected')");
             });
+        });
+
+        modelBuilder.Entity("LeaveManagement.API.Models.Employee", b =>
+        {
+            b.HasOne("LeaveManagement.API.Models.Employee", "Manager")
+                .WithMany("DirectReports")
+                .HasForeignKey("ManagerID")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.Navigation("Manager");
         });
 
         modelBuilder.Entity("LeaveManagement.API.Models.LeaveRequest", b =>
@@ -145,12 +161,21 @@ partial class LeaveManagementDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
+            b.HasOne("LeaveManagement.API.Models.Employee", "AssignedManager")
+                .WithMany("AssignedLeaveRequests")
+                .HasForeignKey("ManagerID")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.Navigation("AssignedManager");
             b.Navigation("Employee");
             b.Navigation("LeaveType");
         });
 
         modelBuilder.Entity("LeaveManagement.API.Models.Employee", b =>
         {
+            b.Navigation("AssignedLeaveRequests");
+            b.Navigation("DirectReports");
             b.Navigation("LeaveRequests");
         });
 

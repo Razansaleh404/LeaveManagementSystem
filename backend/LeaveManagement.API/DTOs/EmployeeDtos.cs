@@ -23,4 +23,6 @@ public class EmployeeCreateUpdateDto
     public string? Password { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public int? ManagerID { get; set; }
 }

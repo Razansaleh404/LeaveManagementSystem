@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 type DemoAccount = { label: string; role: string; email: string; password: string; description: string };
 
-@Component({ selector: 'app-login', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './login.component.html' })
+@Component({ selector: 'app-login', standalone: true, imports: [CommonModule, FormsModule, RouterLink], templateUrl: './login.component.html' })
 export class LoginComponent {
   email = '';
   password = '';
@@ -28,7 +28,14 @@ export class LoginComponent {
       role: 'Manager',
       email: 'manager@leave.local',
       password: 'Password123!',
-      description: 'Review, approve, and reject team leave requests.'
+      description: 'Review, approve, and reject assigned team leave requests.'
+    },
+    {
+      label: 'Admin demo',
+      role: 'Admin',
+      email: 'admin@leave.local',
+      password: 'Password123!',
+      description: 'Manage users, roles, and manager assignments.'
     }
   ];
 

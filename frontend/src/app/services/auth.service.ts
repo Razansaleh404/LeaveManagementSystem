@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthUser, LoginResponse, UserRole } from '../models/models';
+import { AuthManager, AuthUser, LoginResponse, RegisterRequest, UserRole } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -16,15 +16,14 @@ export class AuthService {
   constructor(private readonly http: HttpClient) {}
 
   login(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
-      tap(response => {
-        localStorage.setItem(this.tokenKey, response.token);
-        localStorage.setItem(this.userKey, JSON.stringify(response.user));
-        localStorage.setItem(this.expiresAtKey, response.expiresAt);
-        this.userSubject.next(response.user);
-      })
-    );
+    return this.saveSession(this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password }));
   }
+
+  register(request: RegisterRequest): Observable<LoginResponse> {
+    return this.saveSession(this.http.post<LoginResponse>(`${this.apiUrl}/register`, request));
+  }
+
+  getManagers(): Observable<AuthManager[]> { return this.http.get<AuthManager[]>(`${this.apiUrl}/managers`); }
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
@@ -55,7 +54,18 @@ export class AuthService {
   hasRole(role: UserRole): boolean { return this.currentUser?.role === role; }
 
   redirectPathForRole(role: UserRole): string {
-    return role === 'Manager' ? '/manager' : '/request-leave';
+    return role === 'Admin' ? '/admin' : role === 'Manager' ? '/manager' : '/request-leave';
+  }
+
+  private saveSession(request$: Observable<LoginResponse>): Observable<LoginResponse> {
+    return request$.pipe(
+      tap(response => {
+        localStorage.setItem(this.tokenKey, response.token);
+        localStorage.setItem(this.userKey, JSON.stringify(response.user));
+        localStorage.setItem(this.expiresAtKey, response.expiresAt);
+        this.userSubject.next(response.user);
+      })
+    );
   }
 
   private loadUser(): AuthUser | null {

@@ -15,6 +15,9 @@ public class LeaveRequest : IValidatableObject
     [Required]
     public int LeaveTypeID { get; set; }
 
+    [Required]
+    public int ManagerID { get; set; }
+
     [Column(TypeName = "date")]
     public DateOnly FromDate { get; set; }
 
@@ -34,10 +37,12 @@ public class LeaveRequest : IValidatableObject
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-    [JsonIgnore]  // ← Add this to stop the JSON cycle
     public Employee Employee { get; set; } = null!;
 
     public LeaveType LeaveType { get; set; } = null!;
+
+    [JsonIgnore]
+    public Employee AssignedManager { get; set; } = null!;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

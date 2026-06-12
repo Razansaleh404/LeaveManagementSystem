@@ -56,7 +56,17 @@
             <select class="form-select" id="role" name="role" [(ngModel)]="form.role" required>
               <option value="Employee">Employee</option>
               <option value="Manager">Manager</option>
+              <option value="Admin">Admin</option>
             </select>
+          </div>
+
+          <div class="mb-3" *ngIf="form.role === 'Employee'">
+            <label class="form-label" for="managerID">Assigned Manager <span class="required">*</span></label>
+            <select class="form-select" id="managerID" name="managerID" [(ngModel)]="form.managerID" required #managerID="ngModel" [class.is-invalid]="(!form.managerID || managerID.invalid) && managerID.touched">
+              <option [ngValue]="null">Select manager</option>
+              <option *ngFor="let manager of managers" [ngValue]="manager.employeeID" [disabled]="manager.employeeID === form.employeeID">{{ manager.firstName }} {{ manager.lastName }} · {{ manager.department }}</option>
+            </select>
+            <div class="invalid-feedback d-block" *ngIf="(!form.managerID || managerID.invalid) && managerID.touched">Assigned manager is required for employees.</div>
           </div>
 
           <div class="mb-3">
@@ -73,7 +83,7 @@
           </div>
 
           <div class="d-grid d-sm-flex gap-2">
-            <button class="btn btn-primary btn-action" [disabled]="employeeForm.invalid || isEmailInUse || saving">
+            <button class="btn btn-primary btn-action" [disabled]="employeeForm.invalid || isEmailInUse || isManagerAssignmentMissing || saving">
               {{ saving ? 'Saving...' : 'Save Employee' }}
             </button>
             <button type="button" class="btn btn-outline-secondary btn-action" (click)="resetForm(employeeForm)">Clear</button>
@@ -107,6 +117,7 @@
                 <th>Email</th>
                 <th>Department</th>
                 <th>Role</th>
+                <th>Manager</th>
                 <th>Status</th>
                 <th class="text-end">Actions</th>
               </tr>
@@ -120,6 +131,7 @@
                 <td>{{ employee.email }}</td>
                 <td>{{ employee.department }}</td>
                 <td><span class="badge rounded-pill bg-info text-dark">{{ employee.role }}</span></td>
+                <td>{{ managerName(employee) }}</td>
                 <td><span class="badge rounded-pill" [ngClass]="employee.isActive ? 'bg-success' : 'bg-secondary'">{{ employee.isActive ? 'Active' : 'Inactive' }}</span></td>
                 <td class="text-end action-cell">
                   <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="edit(employee)">Edit</button>
@@ -127,7 +139,7 @@
                 </td>
               </tr>
               <tr *ngIf="employees.length === 0">
-                <td colspan="6" class="empty-state">No employees found.</td>
+                <td colspan="7" class="empty-state">No employees found.</td>
               </tr>
             </tbody>
           </table>

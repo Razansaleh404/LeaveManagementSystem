@@ -11,11 +11,11 @@ namespace LeaveManagement.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = UserRole.Employee + "," + UserRole.Manager)]
+[Authorize(Roles = UserRole.Employee + "," + UserRole.Manager + "," + UserRole.Admin)]
 public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequestValidator validator) : ControllerBase
 {
     [HttpGet]
-    [Authorize(Roles = UserRole.Manager)]
+    [Authorize(Roles = UserRole.Manager + "," + UserRole.Admin)]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetLeaveRequests()
     {
         return await VisibleRequests().OrderByDescending(lr => lr.CreatedDate).ToListAsync();
@@ -62,10 +62,10 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     }
 
     [HttpGet("pending")]
-    [Authorize(Roles = UserRole.Manager)]
+    [Authorize(Roles = UserRole.Manager + "," + UserRole.Admin)]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetPendingRequests()
     {
-        return await BaseQuery().Where(lr => lr.Status == LeaveStatus.Pending).OrderBy(lr => lr.FromDate).ToListAsync();
+        return await VisibleRequests().Where(lr => lr.Status == LeaveStatus.Pending).OrderBy(lr => lr.FromDate).ToListAsync();
     }
 
     [HttpPost]
@@ -79,6 +79,12 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
         }
 
         dto.EmployeeID = currentEmployeeId.Value;
+        var employee = await context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.EmployeeID == currentEmployeeId.Value && e.IsActive);
+        if (employee?.ManagerID is null)
+        {
+            return BadRequest(new { message = "Your profile must have an assigned manager before you can submit leave requests." });
+        }
+
         var errors = await validator.ValidateCreateAsync(dto);
         if (errors.Count > 0)
         {
@@ -89,6 +95,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
         {
             EmployeeID = dto.EmployeeID,
             LeaveTypeID = dto.LeaveTypeID,
+            ManagerID = employee.ManagerID.Value,
             FromDate = dto.FromDate,
             ToDate = dto.ToDate,
             NumberOfDays = LeaveRequestValidator.CalculateNumberOfDays(dto.FromDate, dto.ToDate),
@@ -105,13 +112,18 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = UserRole.Manager)]
+    [Authorize(Roles = UserRole.Manager + "," + UserRole.Admin)]
     public async Task<IActionResult> UpdateLeaveRequest(int id, LeaveRequestUpdateDto dto)
     {
         var request = await context.LeaveRequests.FindAsync(id);
         if (request is null)
         {
             return NotFound(new { message = "Leave request not found." });
+        }
+
+        if (!CanManageRequest(request))
+        {
+            return Forbid();
         }
 
         var errors = await validator.ValidateCreateAsync(dto, dto.Status);
@@ -134,7 +146,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = UserRole.Manager)]
+    [Authorize(Roles = UserRole.Manager + "," + UserRole.Admin)]
     public async Task<IActionResult> DeleteLeaveRequest(int id)
     {
         var request = await context.LeaveRequests.FindAsync(id);
@@ -143,20 +155,25 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
             return NotFound(new { message = "Leave request not found." });
         }
 
+        if (!CanManageRequest(request))
+        {
+            return Forbid();
+        }
+
         context.LeaveRequests.Remove(request);
         await context.SaveChangesAsync();
         return NoContent();
     }
 
     [HttpPut("{id:int}/approve")]
-    [Authorize(Roles = UserRole.Manager)]
+    [Authorize(Roles = UserRole.Manager + "," + UserRole.Admin)]
     public async Task<IActionResult> ApproveRequest(int id, ManagerDecisionDto dto)
     {
         return await UpdateStatus(id, LeaveStatus.Approved, dto.ManagerComments);
     }
 
     [HttpPut("{id:int}/reject")]
-    [Authorize(Roles = UserRole.Manager)]
+    [Authorize(Roles = UserRole.Manager + "," + UserRole.Admin)]
     public async Task<IActionResult> RejectRequest(int id, ManagerDecisionDto dto)
     {
         return await UpdateStatus(id, LeaveStatus.Rejected, dto.ManagerComments);
@@ -170,16 +187,38 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
             return NotFound(new { message = "Leave request not found." });
         }
 
+        if (!CanManageRequest(request))
+        {
+            return Forbid();
+        }
+
         request.Status = status;
         request.ManagerComments = managerComments;
         await context.SaveChangesAsync();
         return NoContent();
     }
 
+    private bool CanManageRequest(LeaveRequest request)
+    {
+        if (User.IsInRole(UserRole.Admin))
+        {
+            return true;
+        }
+
+        var managerId = GetCurrentEmployeeId();
+        return managerId is not null && request.ManagerID == managerId.Value;
+    }
+
     private IQueryable<LeaveRequest> VisibleRequests()
     {
         var query = BaseQuery();
         if (User.IsInRole(UserRole.Manager))
+        {
+            var managerId = GetCurrentEmployeeId();
+            return managerId is null ? query.Where(_ => false) : query.Where(lr => lr.ManagerID == managerId.Value);
+        }
+
+        if (User.IsInRole(UserRole.Admin))
         {
             return query;
         }
@@ -201,6 +240,7 @@ public class LeaveRequestsController(LeaveManagementDbContext context, LeaveRequ
     {
         return context.LeaveRequests
             .Include(lr => lr.Employee)
+            .Include(lr => lr.AssignedManager)
             .Include(lr => lr.LeaveType)
             .AsNoTracking();
     }

@@ -18,10 +18,16 @@ public static class DatabaseSeeder
         }
 
         await EnsureAuthenticationColumnsAsync(context);
+        await EnsureAssignmentColumnsAsync(context);
         await EnsureExistingEmployeesCanSignInAsync(context, passwordService);
 
-        await EnsureUserAsync(context, passwordService, "manager@leave.local", "Mia", "Manager", "Operations", UserRole.Manager);
-        await EnsureUserAsync(context, passwordService, "employee@leave.local", "Evan", "Employee", "Engineering", UserRole.Employee);
+        await EnsureUserAsync(context, passwordService, "admin@leave.local", "Ari", "Admin", "People Ops", UserRole.Admin);
+        var manager = await EnsureUserAsync(context, passwordService, "manager@leave.local", "Mia", "Manager", "Operations", UserRole.Manager);
+        var employee = await EnsureUserAsync(context, passwordService, "employee@leave.local", "Evan", "Employee", "Engineering", UserRole.Employee);
+        await context.SaveChangesAsync();
+
+        employee.ManagerID ??= manager.EmployeeID;
+        await AssignExistingEmployeesToDefaultManagerAsync(context, manager.EmployeeID);
         await context.SaveChangesAsync();
     }
 
@@ -53,15 +59,62 @@ public static class DatabaseSeeder
             IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
                 AND COL_LENGTH(N'dbo.Employees', N'Role') IS NOT NULL
             BEGIN
+                IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
+                    ALTER TABLE dbo.Employees DROP CONSTRAINT CK_Employees_Role;
+
                 UPDATE dbo.Employees
                 SET [Role] = CASE
                     WHEN LOWER(LTRIM(RTRIM([Role]))) = N'manager' THEN N'Manager'
+                    WHEN LOWER(LTRIM(RTRIM([Role]))) = N'admin' THEN N'Admin'
                     ELSE N'Employee'
                 END;
 
                 IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Employees_Role' AND parent_object_id = OBJECT_ID(N'dbo.Employees'))
-                    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager'));
+                    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Role CHECK ([Role] IN (N'Employee', N'Manager', N'Admin'));
             END
+            """);
+    }
+
+    private static async Task EnsureAssignmentColumnsAsync(LeaveManagementDbContext context)
+    {
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL
+                AND COL_LENGTH(N'dbo.Employees', N'ManagerID') IS NULL
+            BEGIN
+                ALTER TABLE dbo.Employees ADD ManagerID int NULL;
+            END
+            """);
+
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'dbo.LeaveRequests', N'U') IS NOT NULL
+                AND COL_LENGTH(N'dbo.LeaveRequests', N'ManagerID') IS NULL
+            BEGIN
+                ALTER TABLE dbo.LeaveRequests ADD ManagerID int NULL;
+            END
+            """);
+    }
+
+    private static async Task AssignExistingEmployeesToDefaultManagerAsync(LeaveManagementDbContext context, int managerId)
+    {
+        var employees = await context.Employees
+            .Where(e => e.Role == UserRole.Employee && e.ManagerID == null)
+            .ToListAsync();
+        foreach (var employee in employees)
+        {
+            employee.ManagerID = managerId;
+        }
+
+        await context.SaveChangesAsync();
+
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            UPDATE lr
+            SET ManagerID = e.ManagerID
+            FROM dbo.LeaveRequests lr
+            INNER JOIN dbo.Employees e ON lr.EmployeeID = e.EmployeeID
+            WHERE lr.ManagerID IS NULL AND e.ManagerID IS NOT NULL;
             """);
     }
 
@@ -102,7 +155,7 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task EnsureUserAsync(
+    private static async Task<Employee> EnsureUserAsync(
         LeaveManagementDbContext context,
         PasswordService passwordService,
         string email,
@@ -116,7 +169,7 @@ public static class DatabaseSeeder
         if (user is null)
         {
             var password = passwordService.HashPassword("Password123!");
-            context.Employees.Add(new Employee
+            var employee = new Employee
             {
                 FirstName = firstName,
                 LastName = lastName,
@@ -126,8 +179,9 @@ public static class DatabaseSeeder
                 PasswordHash = password.Hash,
                 PasswordSalt = password.Salt,
                 IsActive = true
-            });
-            return;
+            };
+            context.Employees.Add(employee);
+            return employee;
         }
 
         var changed = false;
@@ -155,5 +209,7 @@ public static class DatabaseSeeder
         {
             context.Employees.Update(user);
         }
+
+        return user;
     }
 }

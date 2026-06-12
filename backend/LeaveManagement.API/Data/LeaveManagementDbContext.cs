@@ -26,9 +26,13 @@ public class LeaveManagementDbContext(DbContextOptions<LeaveManagementDbContext>
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.Property(e => e.PasswordSalt).IsRequired();
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasOne(e => e.Manager)
+                .WithMany(e => e.DirectReports)
+                .HasForeignKey(e => e.ManagerID)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_Employees_Role", "[Role] IN ('Employee', 'Manager')");
+                table.HasCheckConstraint("CK_Employees_Role", "[Role] IN ('Employee', 'Manager', 'Admin')");
             });
         });
 
@@ -55,6 +59,10 @@ public class LeaveManagementDbContext(DbContextOptions<LeaveManagementDbContext>
             entity.Property(lr => lr.Status).IsRequired().HasMaxLength(20).HasDefaultValue(LeaveStatus.Pending);
             entity.Property(lr => lr.ManagerComments).HasMaxLength(500);
             entity.Property(lr => lr.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
+            entity.HasOne(lr => lr.AssignedManager)
+                .WithMany(e => e.AssignedLeaveRequests)
+                .HasForeignKey(lr => lr.ManagerID)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_LeaveRequests_DateRange", "[ToDate] >= [FromDate]");

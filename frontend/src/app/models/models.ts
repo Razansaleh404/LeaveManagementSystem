@@ -1,4 +1,4 @@
-export type UserRole = 'Employee' | 'Manager';
+export type UserRole = 'Employee' | 'Manager' | 'Admin';
 
 export interface Employee {
   employeeID: number;
@@ -9,6 +9,7 @@ export interface Employee {
   role: UserRole;
   password?: string;
   isActive: boolean;
+  managerID?: number | null;
 }
 
 export interface AuthUser {
@@ -18,12 +19,29 @@ export interface AuthUser {
   email: string;
   department: string;
   role: UserRole;
+  managerID?: number | null;
 }
 
 export interface LoginResponse {
   token: string;
   expiresAt: string;
   user: AuthUser;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  password: string;
+  managerID: number;
+}
+
+export interface AuthManager {
+  employeeID: number;
+  firstName: string;
+  lastName: string;
+  department: string;
 }
 
 export interface LeaveType {
@@ -37,6 +55,7 @@ export interface LeaveRequest {
   requestID: number;
   employeeID: number;
   leaveTypeID: number;
+  managerID: number;
   fromDate: string;
   toDate: string;
   numberOfDays: number;
